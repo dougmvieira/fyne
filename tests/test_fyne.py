@@ -32,6 +32,20 @@ def test_impliedvol_exception():
                                  option_price)
 
 
+def test_delta():
+    sigma = 0.2
+    underlying_price = 100.
+    strike = 90.
+    maturity = 0.5
+
+    delta_exact = blackscholes.delta(underlying_price, strike, maturity, sigma)
+    delta_finite_diffs = 500.*(
+        blackscholes.formula(underlying_price + .001, strike, maturity, sigma)
+        - blackscholes.formula(underlying_price - .001, strike, maturity, sigma))
+
+    assert abs(delta_exact - delta_finite_diffs) < 1e-3
+
+
 def test_vega():
     sigma = 0.2
     underlying_price = 100.
