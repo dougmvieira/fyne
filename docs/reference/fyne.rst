@@ -5,5 +5,5 @@ fyne
 
     from fyne import *
 
-.. automodule:: fyne
+.. automodule:: fyne.blackscholes
     :members:
