@@ -7,3 +7,6 @@ fyne
 
 .. automodule:: fyne.blackscholes
     :members:
+
+.. automodule:: fyne.heston
+    :members:
