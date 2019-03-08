@@ -101,12 +101,63 @@ def delta(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
     >>> delta = heston.delta(underlying_price, strike, maturity, v, kappa,
     ...                      theta, nu, rho)
     >>> round(delta, 2)
+    0.72
 
     """
 
     k = np.log(strike/underlying_price)
     a = kappa*theta
     return _reduced_delta(k, expiry, vol, kappa, a, nu, rho)
+
+
+def vega(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
+    r"""Heston Greek vega
+
+    Computes the Greek :math:`\mathcal{V}` (vega) of the option according to
+    the Heston formula.
+
+    Parameters
+    ----------
+    underlying_price : float
+        Price of the underlying asset.
+    strike : float
+        Strike of the option.
+    expiry : float
+        Time remaining until the expiry of the option.
+    vol : float
+        Instantaneous volatility.
+    kappa : float
+        Model parameter :math:`\kappa`.
+    theta : float
+        Model parameter :math:`\theta`.
+    nu : float
+        Model parameter :math:`\nu`.
+    rho : float
+        Model parameter :math:`\rho`.
+
+    Returns
+    -------
+    float
+        Option Greek :math:`\mathcal{V}` (vega) according to Heston formula.
+
+    Example
+    -------
+
+    >>> from fyne import heston
+    >>> v, kappa, theta, nu, rho = 0.2, 1.3, 0.04, 0.4, -0.3
+    >>> underlying_price = 100.
+    >>> strike = 90.
+    >>> maturity = 0.5
+    >>> vega = heston.vega(underlying_price, strike, maturity, v, kappa, theta,
+    ...                    nu, rho)
+    >>> round(vega, 2)
+    22.5
+
+    """
+
+    k = np.log(strike/underlying_price)
+    a = kappa*theta
+    return _reduced_vega(k, expiry, vol, kappa, a, nu, rho)*underlying_price
 
 
 def calibration(underlying_price, strike, expiry, option_prices, initial_guess):
@@ -228,6 +279,7 @@ def _reduced_formula(k, t, v, kappa, a, nu, rho):
     return c
 
 
+@njit
 def _delta_integrand(u, k, t, v, kappa, a, nu, rho):
     psi_1, psi_2 = _heston_psi(u - 1j, t, kappa, a, nu, rho)
     return common._delta_integrand(u, k, v, psi_1, psi_2)
@@ -236,6 +288,17 @@ def _delta_integrand(u, k, t, v, kappa, a, nu, rho):
 def _reduced_delta(k, t, v, kappa, a, nu, rho):
     return 0.5 + quad(lambda u: _delta_integrand(u, k, t, v, kappa, a, nu,
                                                  rho), 0, np.inf)[0]/pi
+
+
+@njit
+def _vega_integrand(u, k, t, v, kappa, a, nu, rho):
+    psi_1, psi_2 = _heston_psi(u - 0.5j, t, kappa, a, nu, rho)
+    return common._vega_integrand(u, k, v, psi_1, psi_2)
+
+
+def _reduced_vega(k, t, v, kappa, a, nu, rho):
+    return -quad(lambda u: _vega_integrand(u, k, t, v, kappa, a, nu, rho), 0,
+                 np.inf)[0]/pi
 
 
 def _calibration_loss(cs, ks, ts, params):

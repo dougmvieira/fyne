@@ -95,3 +95,18 @@ def test_heston_delta():
         - heston.formula(underlying_price - .001, strike, expiry, *params))
 
     assert abs(delta_exact - delta_finite_diffs) < 1e-3
+
+
+def test_heston_vega():
+    vol = 0.0457
+    params = 5.07, 0.0457, 0.48, -0.767
+    underlying_price = 100.
+    strike = 90.
+    expiry = 0.5
+
+    vega_exact = heston.vega(underlying_price, strike, expiry, vol, *params)
+    vega_finite_diffs = 500.*(
+        heston.formula(underlying_price, strike, expiry, vol + .001, *params)
+        - heston.formula(underlying_price, strike, expiry, vol - .001, *params))
+
+    assert abs(vega_exact - vega_finite_diffs) < 1e-3

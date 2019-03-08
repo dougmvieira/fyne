@@ -14,10 +14,16 @@ def _assert_no_arbitrage(underlying_price, option_price, strike):
 
 
 @njit
+def _lipton_integrand(u, k, v, psi_1, psi_2):
+    return cmath.exp((0.5 - u*1j)*k + psi_1 + psi_2*v).real/(u**2 + 0.25)
+
+
+@njit
 def _delta_integrand(u, k, v, psi_1, psi_2):
     return (cmath.exp(-u*k*1j + psi_1 + v*psi_2)/(u*1j)).real
 
 
 @njit
-def _lipton_integrand(u, k, v, psi_1, psi_2):
-    return cmath.exp((0.5 - u*1j)*k + psi_1 + psi_2*v).real/(u**2 + 0.25)
+def _vega_integrand(u, k, v, psi_1, psi_2):
+    return (psi_2*cmath.exp((0.5 - u*1j)*k + psi_1 + psi_2*v)
+            ).real/(u**2 + 0.25)
