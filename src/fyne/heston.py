@@ -1,5 +1,5 @@
 import cmath
-from itertools import repeat, starmap
+from itertools import repeat
 from math import pi
 from timeit import Timer
 
@@ -136,18 +136,21 @@ def benchmark(n):
 
     """
 
-    v, kappa, a, nu, rho = 0.0457, 5.07, 0.2317, 0.48, -0.767
-    ks = np.linspace(np.log(0.8), np.log(1.2), n)
-    t = 0.5
+    setup = """
+import numpy as np
 
-    # First execution to trigger JIT
-    _reduced_formula(0., t, v, kappa, a, nu, rho)
+from fyne.heston import _reduced_formula
+
+
+t, v, kappa, a, nu, rho = 0.5, 0.0457, 5.07, 0.2317, 0.48, -0.767
+ks = np.linspace(np.log(0.8), np.log(1.2), {})
+
+# First execution to trigger JIT
+_reduced_formula(0., t, v, kappa, a, nu, rho)""".format(n)
 
     timer = Timer('[_reduced_formula(k, t, v, kappa, a, nu, rho) for k in ks]',
-                  globals=dict(globals(), **locals()))
-    times = map(lambda t: t.autorange(), repeat(timer, 5))
-
-    return min(starmap(lambda n, t: t/n, times))
+                  setup=setup)
+    return min(map(lambda t: t.timeit(number=50)/50., repeat(timer, 5)))
 
 
 @njit
