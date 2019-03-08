@@ -77,3 +77,7 @@ def test_heston_formula():
 
     original = vol, kappa, theta, nu, rho
     assert np.max(np.abs(np.array(calibrated) - np.array(original))) < 1e-6
+
+
+def test_heston_benchmark():
+    assert heston.benchmark(1) > 0
