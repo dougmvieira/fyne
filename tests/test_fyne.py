@@ -81,3 +81,17 @@ def test_heston_formula():
 
 def test_heston_benchmark():
     assert heston.benchmark(1) > 0
+
+
+def test_heston_delta():
+    params = 0.0457, 5.07, 0.0457, 0.48, -0.767
+    underlying_price = 100.
+    strike = 90.
+    expiry = 0.5
+
+    delta_exact = heston.delta(underlying_price, strike, expiry, *params)
+    delta_finite_diffs = 500.*(
+        heston.formula(underlying_price + .001, strike, expiry, *params)
+        - heston.formula(underlying_price - .001, strike, expiry, *params))
+
+    assert abs(delta_exact - delta_finite_diffs) < 1e-3

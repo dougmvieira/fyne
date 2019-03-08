@@ -8,7 +8,7 @@ from numba import njit
 from scipy.integrate import quad
 from scipy.optimize import leastsq
 
-from fyne.common import _lipton_integrand, _assert_no_arbitrage
+from fyne import common
 
 
 def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
@@ -58,6 +58,55 @@ def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
     k = np.log(strike/underlying_price)
     a = kappa*theta
     return _reduced_formula(k, expiry, vol, kappa, a, nu, rho)*underlying_price
+
+
+def delta(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
+    r"""Heston Greek delta
+
+    Computes the Greek :math:`\Delta` (delta) of the option according to the
+    Heston formula.
+
+    Parameters
+    ----------
+    underlying_price : float
+        Price of the underlying asset.
+    strike : float
+        Strike of the option.
+    expiry : float
+        Time remaining until the expiry of the option.
+    vol : float
+        Instantaneous volatility.
+    kappa : float
+        Model parameter :math:`\kappa`.
+    theta : float
+        Model parameter :math:`\theta`.
+    nu : float
+        Model parameter :math:`\nu`.
+    rho : float
+        Model parameter :math:`\rho`.
+
+    Returns
+    -------
+    float
+        Option Greek :math:`\Delta` (delta) according to Heston formula.
+
+    Example
+    -------
+
+    >>> from fyne import heston
+    >>> v, kappa, theta, nu, rho = 0.2, 1.3, 0.04, 0.4, -0.3
+    >>> underlying_price = 100.
+    >>> strike = 90.
+    >>> maturity = 0.5
+    >>> delta = heston.delta(underlying_price, strike, maturity, v, kappa,
+    ...                      theta, nu, rho)
+    >>> round(delta, 2)
+
+    """
+
+    k = np.log(strike/underlying_price)
+    a = kappa*theta
+    return _reduced_delta(k, expiry, vol, kappa, a, nu, rho)
 
 
 def calibration(underlying_price, strike, expiry, option_prices, initial_guess):
@@ -167,16 +216,26 @@ def _heston_psi(u, t, kappa, a, nu, rho):
 @njit
 def _integrand(u, k, t, v, kappa, a, nu, rho):
     psi_1, psi_2 = _heston_psi(u - 0.5j, t, kappa, a, nu, rho)
-    return _lipton_integrand(u, k, v, psi_1, psi_2)
+    return common._lipton_integrand(u, k, v, psi_1, psi_2)
 
 
 def _reduced_formula(k, t, v, kappa, a, nu, rho):
     c = 1 - quad(lambda u: _integrand(u, k, t, v, kappa, a, nu, rho), 0,
                  np.inf)[0]/pi
 
-    _assert_no_arbitrage(1., c, np.exp(k))
+    common._assert_no_arbitrage(1., c, np.exp(k))
 
     return c
+
+
+def _delta_integrand(u, k, t, v, kappa, a, nu, rho):
+    psi_1, psi_2 = _heston_psi(u - 1j, t, kappa, a, nu, rho)
+    return common._delta_integrand(u, k, v, psi_1, psi_2)
+
+
+def _reduced_delta(k, t, v, kappa, a, nu, rho):
+    return 0.5 + quad(lambda u: _delta_integrand(u, k, t, v, kappa, a, nu,
+                                                 rho), 0, np.inf)[0]/pi
 
 
 def _calibration_loss(cs, ks, ts, params):
