@@ -8,6 +8,8 @@ from numba import njit
 from scipy.integrate import quad
 from scipy.optimize import leastsq
 
+from fyne.common import _lipton_integrand
+
 
 def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
     r"""Heston formula
@@ -149,15 +151,20 @@ def benchmark(n):
 
 
 @njit
-def _integrand(u, k, t, v, kappa, a, nu, rho):
-    u_p = u - 0.5j
-    d = cmath.sqrt(nu**2*(u_p**2 + 1j*u_p) + (kappa - 1j*nu*rho*u_p)**2)
-    g = (-d + kappa - 1j*nu*rho*u_p)/(d + kappa - 1j*nu*rho*u_p)
+def _heston_psi(u, t, kappa, a, nu, rho):
+    d = cmath.sqrt(nu**2*(u**2 + 1j*u) + (kappa - 1j*nu*rho*u)**2)
+    g = (-d + kappa - 1j*nu*rho*u)/(d + kappa - 1j*nu*rho*u)
     h = (g*cmath.exp(-d*t) - 1)/(g - 1)
-    psi_1 = a*(t*(-d + kappa - 1j*nu*rho*u_p) - 2*cmath.log(h))/nu**2
-    psi_2 = (1 - cmath.exp(-d*t))*(-d + kappa - 1j*nu*rho*u_p)/(
+    psi_1 = a*(t*(-d + kappa - 1j*nu*rho*u) - 2*cmath.log(h))/nu**2
+    psi_2 = (1 - cmath.exp(-d*t))*(-d + kappa - 1j*nu*rho*u)/(
         (-g*cmath.exp(-d*t) + 1)*nu**2)
-    return cmath.exp((0.5 - u*1j)*k + psi_1 + psi_2*v).real/(u**2 + 0.25)
+    return psi_1, psi_2
+
+
+@njit
+def _integrand(u, k, t, v, kappa, a, nu, rho):
+    psi_1, psi_2 = _heston_psi(u - 0.5j, t, kappa, a, nu, rho)
+    return _lipton_integrand(u, k, v, psi_1, psi_2)
 
 
 def _reduced_formula(k, t, v, kappa, a, nu, rho):
