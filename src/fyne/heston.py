@@ -8,7 +8,7 @@ from numba import njit
 from scipy.integrate import quad
 from scipy.optimize import leastsq
 
-from fyne.common import _lipton_integrand
+from fyne.common import _lipton_integrand, _assert_no_arbitrage
 
 
 def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
@@ -174,12 +174,7 @@ def _reduced_formula(k, t, v, kappa, a, nu, rho):
     c = 1 - quad(lambda u: _integrand(u, k, t, v, kappa, a, nu, rho), 0,
                  np.inf)[0]/pi
 
-    no_arb_low_bound = max(0., 1. - np.exp(k))
-    no_arb_up_bound = 1.
-    if c <= no_arb_low_bound:
-        raise ValueError("Warning: Option price below no-arbitrage bounds")
-    elif c >= no_arb_up_bound:
-        raise ValueError("Warning: Option price above no-arbitrage bounds")
+    _assert_no_arbitrage(1., c, np.exp(k))
 
     return c
 

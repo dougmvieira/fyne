@@ -2,6 +2,8 @@ import numpy as np
 from scipy.optimize import newton
 from scipy.stats import norm
 
+from fyne.common import _assert_no_arbitrage
+
 
 def formula(underlying_price, strike, expiry, sigma):
     """Black-Scholes formula
@@ -83,9 +85,8 @@ def implied_vol(underlying_price, strike, expiry, option_price,
     0.2
 
     """
-    if (option_price <= underlying_price - strike
-            or option_price >= underlying_price):
-        raise ValueError("Option price outside no-arbitrage bounds")
+
+    _assert_no_arbitrage(underlying_price, option_price, strike)
 
     k = np.log(strike/underlying_price)
     c = option_price/underlying_price
