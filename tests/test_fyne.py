@@ -103,6 +103,22 @@ def test_heston_calibration_panel():
     assert np.max(np.abs(np.array(calibrated) - np.array(original))) < 1e-6
 
 
+def test_heston_calibration_vol():
+    vol, kappa, theta, nu, rho = 0.0457, 5.07, 0.0457, 0.48, -0.767
+    underlying_price = 100.
+    strikes = np.array([80., 80., 100., 100., 120., 120.])
+    expiries = np.array([0.25, 0.5, 0.25, 0.5, 0.25, 0.5])
+
+    option_prices = np.array([heston.formula(underlying_price, strike, expiry,
+                                             vol, kappa, theta, nu, rho)
+                              for strike, expiry in zip(strikes, expiries)])
+    calibrated_vol = heston.calibration_vol(
+        underlying_price, strikes, expiries, option_prices, kappa, theta, nu,
+        rho)
+
+    assert abs(vol - calibrated_vol) < 1e-6
+
+
 def test_heston_benchmark():
     assert heston.benchmark(1) > 0
 
