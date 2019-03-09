@@ -61,10 +61,10 @@ def test_blackscholes_vega():
     assert abs(vega_exact - vega_finite_diffs) < 1e-3
 
 
-def test_heston_formula():
+def test_heston_calibration_crosssectional():
     vol, kappa, theta, nu, rho = 0.0457, 5.07, 0.0457, 0.48, -0.767
-    underlying_price = 1640.
-    strikes = np.array([1312., 1312., 1640., 1640., 1968., 1968.])
+    underlying_price = 100.
+    strikes = np.array([80., 80., 100., 100., 120., 120.])
     expiries = np.array([0.25, 0.5, 0.25, 0.5, 0.25, 0.5])
 
     option_prices = np.array([heston.formula(underlying_price, strike, expiry,
@@ -72,10 +72,34 @@ def test_heston_formula():
                               for strike, expiry in zip(strikes, expiries)])
     initial_guess = np.array([vol + 0.01, kappa + 1, theta + 0.01,
                               nu - 0.1, rho - 0.1])
-    calibrated = heston.calibration(underlying_price, strikes, expiries,
-                                    option_prices, initial_guess)
+    calibrated = heston.calibration_crosssectional(
+        underlying_price, strikes, expiries, option_prices, initial_guess)
 
     original = vol, kappa, theta, nu, rho
+    assert np.max(np.abs(np.array(calibrated) - np.array(original))) < 1e-6
+
+
+def test_heston_calibration_panel():
+    kappa, theta, nu, rho = 5.07, 0.0457, 0.48, -0.767
+    underlying_prices = np.array([90., 100., 95.])
+    vols = np.array([0.05, 0.045, 0.055])
+    strikes = np.array([80., 80., 100., 100., 120., 120.])
+    expiries = np.array([0.25, 0.5, 0.25, 0.5, 0.25, 0.5])
+
+    option_prices = np.zeros((len(underlying_prices), len(strikes)))
+    for i in range(len(underlying_prices)):
+        option_prices[i, :] = [
+            heston.formula(underlying_prices[i], strike, expiry, vols[i],
+                           kappa, theta, nu, rho)
+            for strike, expiry in zip(strikes, expiries)]
+
+    initial_guess = np.array([vols[1] + 0.01, kappa + 1, theta + 0.01,
+                              nu - 0.1, rho - 0.1])
+    calibrated_tuple = heston.calibration_panel(
+        underlying_prices, strikes, expiries, option_prices, initial_guess)
+    calibrated = np.concatenate((calibrated_tuple[0], calibrated_tuple[1:]))
+    original = np.concatenate((vols, (kappa, theta, nu, rho)))
+
     assert np.max(np.abs(np.array(calibrated) - np.array(original))) < 1e-6
 
 

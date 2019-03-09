@@ -160,11 +160,13 @@ def vega(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
     return _reduced_vega(k, expiry, vol, kappa, a, nu, rho)*underlying_price
 
 
-def calibration(underlying_price, strike, expiry, option_prices, initial_guess):
-    r"""Heston calibration
+def calibration_crosssectional(underlying_price, strike, expiry, option_prices,
+                               initial_guess):
+    r"""Heston cross-sectional calibration
 
-    Recovers the Heston model parameters from options implied volatilities. The
-    calibration is performed using the Levenberg-Marquardt algorithm.
+    Recovers the Heston model parameters from options prices at a single point
+    in time. The calibration is performed using the Levenberg-Marquardt
+    algorithm.
 
     Parameters
     ----------
@@ -177,13 +179,16 @@ def calibration(underlying_price, strike, expiry, option_prices, initial_guess):
     implied_vols : float
         Implied volatilities of call options.
     initial_guess : float, optional
-        Initial guess for the implied volatility for the Newton's method.
+        Initial guess for instantaneous volatility :math:`V_0` and the Heston
+        parameters :math:`\kappa`, :math:`\theta`, :math:`\nu` and
+        :math:`\rho`, respectively.
 
     Returns
     -------
-    tuple of floats
-        Returns the calibrated :math:`V_0`, :math:`\kappa`, :math:`\theta`,
-        :math:`\nu` and :math:`\rho`, respectively.
+    tuple
+        Returns the calibrated instantaneous volatility :math:`V_0` and the
+        Heston parameters :math:`\kappa`, :math:`\theta`, :math:`\nu` and
+        :math:`\rho`, respectively, as :obj:`float`.
 
     Example
     -------
@@ -200,20 +205,98 @@ def calibration(underlying_price, strike, expiry, option_prices, initial_guess):
     ...      for strike, expiry in zip(strikes, expiries)])
     >>> initial_guess = np.array([vol + 0.01, kappa + 1, theta + 0.01,
     ...                           nu - 0.1, rho - 0.1])
-    >>> calibrated = heston.calibration(underlying_price, strikes, expiries,
-    ...                                 option_prices, initial_guess)
+    >>> calibrated = heston.calibration_crosssectional(
+    ...     underlying_price, strikes, expiries, option_prices, initial_guess)
     >>> [round(param, 4) for param in calibrated]
     [0.0457, 5.07, 0.0457, 0.48, -0.767]
 
     """
+
     cs = option_prices/underlying_price
     ks = np.log(strike/underlying_price)
     vol0, kappa0, theta0, nu0, rho0 = initial_guess
     params = np.array([vol0, kappa0, kappa0*theta0, nu0, rho0])
 
-    vol, kappa, a, nu, rho = _reduced_calibration(cs, ks, expiry, params)
+    vol, kappa, a, nu, rho = _reduced_calib_xsect(cs, ks, expiry, params)
 
     return vol, kappa, a/kappa, nu, rho
+
+
+def calibration_panel(underlying_prices, strikes, expiries, option_prices,
+                      initial_guess):
+    r"""Heston panel calibration
+
+    Recovers the Heston model parameters from options prices across strikes,
+    maturities and time. The calibration is performed using the
+    Levenberg-Marquardt algorithm.
+
+    Parameters
+    ----------
+    underlying_price : numpy.array
+        One-dimensional array of prices of the underlying asset at each point
+        in time.
+    strikes : numpy.array
+        One-dimensional array of option strikes. Must be of the same length as
+        the expiries array.
+    expiries : numpy.array
+        One-dimensional array of option expiries. The expiries are the time
+        remaining until the expiry of the option. Must be of the same length as
+        the strikes array.
+    option_prices : numpy.array
+        Two-dimensional array of the call options prices. The array must be
+        :math:`n`-by-:math:`d`, where :math:`n` is the size of
+        `underlying_price` and :math:`d` is the size of `strikes` or
+        `expiries`.
+    initial_guess : float, optional
+        Initial guess for instantaneous volatility :math:`V_0` and the Heston
+        parameters :math:`\kappa`, :math:`\theta`, :math:`\nu` and
+        :math:`\rho`, respectively.
+
+    Returns
+    -------
+    tuple
+        Returns the calibrated instantaneous volatilities :math:`V_0` as a
+        :obj:`numpy.array` and the Heston parameters :math:`\kappa`,
+        :math:`\theta`, :math:`\nu` and :math:`\rho`, respectively, as
+        :obj:`float`.
+
+    Example
+    -------
+
+    >>> import numpy as np
+    >>> from fyne import heston
+    >>> kappa, theta, nu, rho = 5.07, 0.0457, 0.48, -0.767
+    >>> underlying_prices = np.array([90., 100., 95.])
+    >>> vols = np.array([0.05, 0.045, 0.055])
+    >>> strikes = np.array([80., 80., 100., 100., 120., 120.])
+    >>> expiries = np.array([0.25, 0.5, 0.25, 0.5, 0.25, 0.5])
+    >>> option_prices = np.zeros((len(underlying_prices), len(strikes)))
+    >>> for i in range(len(underlying_prices)):
+    ...     option_prices[i, :] = [
+    ...         heston.formula(underlying_prices[i], strike, expiry, vols[i],
+    ...                        kappa, theta, nu, rho)
+    ...         for strike, expiry in zip(strikes, expiries)]
+    >>> initial_guess = np.array([vols[1] + 0.01, kappa + 1, theta + 0.01,
+    ...                           nu - 0.1, rho - 0.1])
+    >>> vols, kappa, theta, nu, rho = heston.calibration_panel(
+    ...     underlying_prices, strikes, expiries, option_prices, initial_guess)
+    >>> np.round(vols, 4)
+    array([0.05 , 0.045, 0.055])
+    >>> [round(param, 4) for param in (kappa, theta, nu, rho)]
+    [5.07, 0.0457, 0.48, -0.767]
+    """
+
+    cs = option_prices/underlying_prices[:, None]
+    ks = np.log(strikes[None, :]/underlying_prices[:, None])
+    vol0, kappa0, theta0, nu0, rho0 = initial_guess
+    params = vol0*np.ones(len(underlying_prices) + 4)
+    params[-4:] = kappa0, kappa0*theta0, nu0, rho0
+
+    calibrated = _reduced_calib_panel(cs, ks, expiries, params)
+    vols = calibrated[:-4]
+    kappa, a, nu, rho = calibrated[-4:]
+
+    return vols, kappa, a/kappa, nu, rho
 
 
 def benchmark(n):
@@ -301,15 +384,35 @@ def _reduced_vega(k, t, v, kappa, a, nu, rho):
                  np.inf)[0]/pi
 
 
-def _calibration_loss(cs, ks, ts, params):
+def _loss_xsect(cs, ks, ts, params):
     v, kappa, a, nu, rho = params
     cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho)
                           for k, t in zip(ks, ts)])
     return cs_heston - cs
 
 
-def _reduced_calibration(cs, ks, ts, params):
-    params, ier = leastsq(lambda params: _calibration_loss(cs, ks, ts, params),
+def _reduced_calib_xsect(cs, ks, ts, params):
+    params, ier = leastsq(lambda params: _loss_xsect(cs, ks, ts, params),
+                          params)
+
+    if ier not in [1, 2, 3, 4]:
+        raise ValueError("Heston calibration failed. ier = {}".format(ier))
+
+    return params
+
+
+def _loss_panel(cs, ks, ts, params):
+    vs = params[:-4]
+    kappa, a, nu, rho = params[-4:]
+    cs_heston = np.zeros(cs.shape)
+    for i in range(len(vs)):
+        cs_heston[i, :] = [_reduced_formula(k, t, vs[i], kappa, a, nu, rho)
+                           for k, t in zip(ks[i, :], ts)]
+    return (cs_heston - cs).flatten()
+
+
+def _reduced_calib_panel(cs, ks, ts, params):
+    params, ier = leastsq(lambda params: _loss_panel(cs, ks, ts, params),
                           params)
 
     if ier not in [1, 2, 3, 4]:
