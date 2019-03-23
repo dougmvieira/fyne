@@ -28,7 +28,7 @@ project = 'fyne'
 year = '2019'
 author = 'Douglas Machado Vieira'
 copyright = '{0}, {1}'.format(year, author)
-version = release = '0.3.0'
+version = release = '0.4.0'
 
 pygments_style = 'trac'
 templates_path = ['.']
