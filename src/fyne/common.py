@@ -1,16 +1,29 @@
 import cmath
 
+import numpy as np
 from numba import njit
 
 
 def _assert_no_arbitrage(underlying_price, option_price, strike):
-    no_arb_low_bound = max(0., underlying_price - strike)
+    no_arb_low_bound = np.maximum(0., underlying_price - strike)
     no_arb_upper_bound = underlying_price
 
-    if option_price <= no_arb_low_bound:
+    if np.any(option_price <= no_arb_low_bound):
         raise ValueError("Warning: Option price below no-arbitrage bounds")
-    elif option_price >= no_arb_upper_bound:
+    elif np.any(option_price >= no_arb_upper_bound):
         raise ValueError("Warning: Option price above no-arbitrage bounds")
+
+
+def _put_call_parity(call, underlying_price, strike, put_bool):
+    return np.where(put_bool, call - underlying_price + strike, call)
+
+
+def _put_call_parity_reverse(put, underlying_price, strike, put_bool):
+    return np.where(put_bool, put + underlying_price - strike, put)
+
+
+def _put_call_parity_delta(call_delta, put_bool):
+    return np.where(put_bool, call_delta - 1., call_delta)
 
 
 @njit
