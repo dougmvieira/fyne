@@ -7,4 +7,4 @@ Please see below the documentation for the implemented affine models.
 
 """
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
