@@ -2,6 +2,7 @@ from math import erf, exp, pi, sqrt
 
 import numba as nb
 import numpy as np
+from numba import float64
 
 from fyne import common
 
@@ -47,8 +48,8 @@ def formula(underlying_price, strike, expiry, sigma, put=False):
     1.77
 
     """
-
-    k = np.log(strike/underlying_price)
+    k = np.array(np.log(strike/underlying_price))
+    expiry, sigma = map(np.array, (expiry, sigma))
     call = _reduced_formula(k, expiry, sigma)*underlying_price
     return common._put_call_parity(call, underlying_price, strike, put)
 
@@ -100,13 +101,13 @@ def implied_vol(underlying_price, strike, expiry, option_price, put=False,
     0.2
 
     """
-
     call = common._put_call_parity_reverse(option_price, underlying_price,
                                            strike, put)
     common._assert_no_arbitrage(underlying_price, call, strike)
 
-    k = np.log(strike/underlying_price)
-    c = call/underlying_price
+    k = np.array(np.log(strike/underlying_price))
+    c = np.array(call/underlying_price)
+    expiry, initial_guess = map(np.array, (expiry, initial_guess))
     return _reduced_implied_vol(k, expiry, c, initial_guess)
 
 
@@ -152,8 +153,8 @@ def delta(underlying_price, strike, expiry, sigma, put=False):
     -0.21
 
     """
-
-    k = np.log(strike/underlying_price)
+    k = np.array(np.log(strike/underlying_price))
+    expiry, sigma = map(np.array, (expiry, sigma))
     call_delta = _reduced_delta(k, expiry, sigma)
     return common._put_call_parity_delta(call_delta, put)
 
@@ -194,12 +195,22 @@ def vega(underlying_price, strike, expiry, sigma):
     20.23
 
     """
-
-    k = np.log(strike/underlying_price)
+    k = np.array(np.log(strike/underlying_price))
+    expiry, sigma = map(np.array, (expiry, sigma))
     return _reduced_vega(k, expiry, sigma)*underlying_price
 
 
-@nb.vectorize(nopython=True)
+@nb.vectorize([float64(float64)])
+def _norm_cdf(z):
+    return (1 + erf(z/sqrt(2)))/2
+
+
+@nb.vectorize([float64(float64)])
+def _norm_pdf(z):
+    return exp(-z**2/2)/sqrt(2*pi)
+
+
+@nb.vectorize([float64(float64, float64, float64)], nopython=True)
 def _reduced_formula(k, t, sigma):
     """Reduced Black-Scholes formula
 
@@ -212,7 +223,19 @@ def _reduced_formula(k, t, sigma):
     return _norm_cdf(d_plus) - _norm_cdf(d_minus)*exp(k)
 
 
-@nb.vectorize(nopython=True)
+@nb.vectorize([float64(float64, float64, float64)], nopython=True)
+def _reduced_vega(k, t, sigma):
+    """Reduced Black-Scholes Greek vega
+
+    Used in `fyne.blackscholes.vega`.
+    """
+    tot_std = sigma*sqrt(t)
+    d_plus = tot_std/2 - k/tot_std
+
+    return _norm_pdf(d_plus)*sqrt(t)
+
+
+@nb.vectorize([float64(float64, float64, float64, float64)], nopython=True)
 def _reduced_implied_vol(k, t, c, iv0):
     """Reduced Implied volatility function
 
@@ -228,7 +251,7 @@ def _reduced_implied_vol(k, t, c, iv0):
     return iv0
 
 
-@nb.vectorize(nopython=True)
+@nb.vectorize([float64(float64, float64, float64)], nopython=True)
 def _reduced_delta(k, t, sigma):
     """Reduced Black-Scholes Greek delta
 
@@ -238,25 +261,3 @@ def _reduced_delta(k, t, sigma):
     d_plus = tot_std/2 - k/tot_std
 
     return _norm_cdf(d_plus)
-
-
-@nb.vectorize(nopython=True)
-def _reduced_vega(k, t, sigma):
-    """Reduced Black-Scholes Greek vega
-
-    Used in `fyne.blackscholes.vega`.
-    """
-    tot_std = sigma*sqrt(t)
-    d_plus = tot_std/2 - k/tot_std
-
-    return _norm_pdf(d_plus)*sqrt(t)
-
-
-@nb.njit
-def _norm_cdf(z):
-    return (1 + erf(z/sqrt(2)))/2
-
-
-@nb.njit
-def _norm_pdf(z):
-    return exp(-z**2/2)/sqrt(2*pi)
