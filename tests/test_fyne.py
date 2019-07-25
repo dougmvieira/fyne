@@ -14,14 +14,14 @@ def test_blackscholes_impliedvol():
     iv = blackscholes.implied_vol(underlying_price, strike, expiry,
                                   option_price)
 
-    assert abs(sigma - iv) < 1e-6
+    assert abs(sigma - iv) < 1e-8
 
     option_price = blackscholes.formula(underlying_price, strike, expiry,
                                         sigma, True)
     iv = blackscholes.implied_vol(underlying_price, strike, expiry,
                                   option_price, True)
 
-    assert abs(sigma - iv) < 1e-6
+    assert abs(sigma - iv) < 1e-8
 
 
 def test_blackscholes_impliedvol_exception():

@@ -1,6 +1,7 @@
+from math import erf, exp, pi, sqrt
+
+import numba as nb
 import numpy as np
-from scipy.optimize import newton
-from scipy.stats import norm
 
 from fyne import common
 
@@ -198,49 +199,64 @@ def vega(underlying_price, strike, expiry, sigma):
     return _reduced_vega(k, expiry, sigma)*underlying_price
 
 
-@np.vectorize
+@nb.vectorize(nopython=True)
 def _reduced_formula(k, t, sigma):
     """Reduced Black-Scholes formula
 
     Used in `fyne.blackscholes.formula`.
     """
-    tot_std = sigma*np.sqrt(t)
+    tot_std = sigma*sqrt(t)
     d_plus = tot_std/2 - k/tot_std
     d_minus = d_plus - tot_std
 
-    return norm.cdf(d_plus) - norm.cdf(d_minus)*np.exp(k)
+    return _norm_cdf(d_plus) - _norm_cdf(d_minus)*exp(k)
 
 
-@np.vectorize
+@nb.vectorize(nopython=True)
 def _reduced_implied_vol(k, t, c, iv0):
     """Reduced Implied volatility function
 
     Used in `fyne.blackscholes.implied_vol`.
     """
 
-    return newton(lambda iv: _reduced_formula(k, t, iv) - c, iv0,
-                  lambda iv: _reduced_vega(k, t, iv))
+    while True:
+        f = _reduced_formula(k, t, iv0) - c
+        if abs(f) < 1e-8:
+            break
+        iv0 -= f/_reduced_vega(k, t, iv0)
+
+    return iv0
 
 
-@np.vectorize
+@nb.vectorize(nopython=True)
 def _reduced_delta(k, t, sigma):
     """Reduced Black-Scholes Greek delta
 
     Used in `fyne.blackscholes.delta`.
     """
-    tot_std = sigma*np.sqrt(t)
+    tot_std = sigma*sqrt(t)
     d_plus = tot_std/2 - k/tot_std
 
-    return norm.cdf(d_plus)
+    return _norm_cdf(d_plus)
 
 
-@np.vectorize
+@nb.vectorize(nopython=True)
 def _reduced_vega(k, t, sigma):
     """Reduced Black-Scholes Greek vega
 
     Used in `fyne.blackscholes.vega`.
     """
-    tot_std = sigma*np.sqrt(t)
+    tot_std = sigma*sqrt(t)
     d_plus = tot_std/2 - k/tot_std
 
-    return norm.pdf(d_plus)*np.sqrt(t)
+    return _norm_pdf(d_plus)*sqrt(t)
+
+
+@nb.njit
+def _norm_cdf(z):
+    return (1 + erf(z/sqrt(2)))/2
+
+
+@nb.njit
+def _norm_pdf(z):
+    return exp(-z**2/2)/sqrt(2*pi)
