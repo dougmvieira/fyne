@@ -39,6 +39,11 @@ def test_blackscholes_impliedvol_exception():
         blackscholes.implied_vol(underlying_price, strike, expiry,
                                  option_price)
 
+    option_price = np.array([0.9, 20])
+    ivs = blackscholes.implied_vol(underlying_price, strike, expiry,
+                                   option_price, assert_no_arbitrage=False)
+    assert np.isnan(ivs[0]) and not np.isnan(ivs[1])
+
 
 def test_blackscholes_delta():
     sigma = 0.2
