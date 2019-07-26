@@ -1,6 +1,6 @@
 import numpy as np
 from fyne import blackscholes, heston
-from pytest import raises
+from pytest import raises, warns
 
 
 def test_blackscholes_impliedvol():
@@ -39,10 +39,11 @@ def test_blackscholes_impliedvol_exception():
         blackscholes.implied_vol(underlying_price, strike, expiry,
                                  option_price)
 
-    option_price = np.array([0.9, 20])
-    ivs = blackscholes.implied_vol(underlying_price, strike, expiry,
-                                   option_price, assert_no_arbitrage=False)
-    assert np.isnan(ivs[0]) and not np.isnan(ivs[1])
+    option_price = np.array([0.9, 20, np.nan])
+    with warns(RuntimeWarning):
+        ivs = blackscholes.implied_vol(underlying_price, strike, expiry,
+                                       option_price, assert_no_arbitrage=False)
+    assert np.isnan(ivs[0]) and not np.isnan(ivs[1]) and np.isnan(ivs[2])
 
 
 def test_blackscholes_delta():

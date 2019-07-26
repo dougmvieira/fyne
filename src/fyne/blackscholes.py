@@ -111,6 +111,8 @@ def implied_vol(underlying_price, strike, expiry, option_price, put=False,
     k, expiry, c, initial_guess = np.broadcast_arrays(k, expiry, c, initial_guess)
     noarb_mask = ~np.any(
         common._check_arbitrage(underlying_price, call, strike), axis=0)
+    noarb_mask &= ~np.any(
+        tuple(map(np.isnan, (k, expiry, c, initial_guess))), axis=0)
 
     iv = np.full(c.shape, np.nan)
     iv[noarb_mask] = _reduced_implied_vol(k[noarb_mask], expiry[noarb_mask],
