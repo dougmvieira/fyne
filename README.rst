@@ -31,9 +31,9 @@ Overview
     :alt: PyPI Package latest release
     :target: https://pypi.org/project/fyne
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/dougmvieira/fyne/v0.5.0.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/dougmvieira/fyne/v0.5.1.svg
     :alt: Commits since latest release
-    :target: https://github.com/dougmvieira/fyne/compare/v0.5.0...master
+    :target: https://github.com/dougmvieira/fyne/compare/v0.5.1...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/fyne.svg
     :alt: PyPI Wheel
