@@ -20,7 +20,7 @@ def read(*names, **kwargs):
 
 setup(
     name='fyne',
-    version='0.5.1',
+    version='0.5.2',
     license='MIT license',
     description='The Python module for option pricing with affine models.',
     long_description='%s\n%s' % (
