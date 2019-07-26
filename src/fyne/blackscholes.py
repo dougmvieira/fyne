@@ -55,7 +55,7 @@ def formula(underlying_price, strike, expiry, sigma, put=False):
 
 
 def implied_vol(underlying_price, strike, expiry, option_price, put=False,
-                initial_guess=0.5):
+                initial_guess=0.5, assert_no_arbitrage=True):
     """Implied volatility function
 
     Inverts the Black-Scholes formula to find the volatility that matches the
@@ -103,12 +103,18 @@ def implied_vol(underlying_price, strike, expiry, option_price, put=False,
     """
     call = common._put_call_parity_reverse(option_price, underlying_price,
                                            strike, put)
-    common._assert_no_arbitrage(underlying_price, call, strike)
+    if assert_no_arbitrage:
+        common._assert_no_arbitrage(underlying_price, call, strike)
 
     k = np.array(np.log(strike/underlying_price))
     c = np.array(call/underlying_price)
     expiry, initial_guess = map(np.array, (expiry, initial_guess))
-    return _reduced_implied_vol(k, expiry, c, initial_guess)
+    arb_mask = np.any(common._check_arbitrage(underlying_price, call, strike),
+                      axis=0)
+
+    iv = np.full(c.shape, np.nan)
+    iv[~arb_mask] = _reduced_implied_vol(k, expiry, c, initial_guess)
+    return iv
 
 
 def delta(underlying_price, strike, expiry, sigma, put=False):

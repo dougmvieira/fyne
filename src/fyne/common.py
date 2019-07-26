@@ -4,14 +4,18 @@ import numpy as np
 from numba import njit
 
 
-def _assert_no_arbitrage(underlying_price, option_price, strike):
+def _check_arbitrage(underlying_price, option_price, strike):
     no_arb_low_bound = np.maximum(0., underlying_price - strike)
     no_arb_upper_bound = underlying_price
+    return no_arb_low_bound >= option_price, option_price >= no_arb_upper_bound
 
-    if np.any(option_price <= no_arb_low_bound):
-        raise ValueError("Warning: Option price below no-arbitrage bounds")
-    elif np.any(option_price >= no_arb_upper_bound):
-        raise ValueError("Warning: Option price above no-arbitrage bounds")
+
+def _assert_no_arbitrage(underlying_price, option_price, strike):
+    low, upper = _check_arbitrage(underlying_price, option_price, strike)
+    if np.any(low):
+        raise ValueError("Option price below no-arbitrage bounds")
+    if np.any(upper):
+        raise ValueError("Option price above no-arbitrage bounds")
 
 
 def _put_call_parity(call, underlying_price, strike, put_bool):
