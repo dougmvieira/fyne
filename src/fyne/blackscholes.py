@@ -252,13 +252,15 @@ def _reduced_implied_vol(k, t, c, iv0):
     Used in `fyne.blackscholes.implied_vol`.
     """
 
-    while True:
+    converged = False
+    for _ in range(10):
         f = _reduced_formula(k, t, iv0) - c
         if abs(f) < 1e-8:
+            converged = True
             break
         iv0 -= f/_reduced_vega(k, t, iv0)
 
-    return iv0
+    return iv0 if converged else np.nan
 
 
 @nb.vectorize([float64(float64, float64, float64)], nopython=True)
