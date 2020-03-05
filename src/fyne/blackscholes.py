@@ -33,6 +33,7 @@ def formula(underlying_price, strike, expiry, sigma, put=False):
     Example
     -------
 
+    >>> import numpy as np
     >>> from fyne import blackscholes
     >>> sigma = 0.2
     >>> underlying_price = 100.
@@ -40,11 +41,11 @@ def formula(underlying_price, strike, expiry, sigma, put=False):
     >>> expiry = 0.5
     >>> call_price = blackscholes.formula(underlying_price, strike, expiry,
     ...                                   sigma)
-    >>> round(call_price, 2)
+    >>> np.round(call_price, 2)
     11.77
     >>> put_price = blackscholes.formula(underlying_price, strike, expiry,
     ...                                  sigma, put=True)
-    >>> round(put_price, 2)
+    >>> np.round(put_price, 2)
     1.77
 
     """
@@ -85,6 +86,7 @@ def implied_vol(underlying_price, strike, expiry, option_price, put=False,
     Example
     -------
 
+    >>> import numpy as np
     >>> from fyne import blackscholes
     >>> call_price = 11.77
     >>> put_price = 1.77
@@ -93,11 +95,11 @@ def implied_vol(underlying_price, strike, expiry, option_price, put=False,
     >>> expiry = 0.5
     >>> implied_vol = blackscholes.implied_vol(underlying_price, strike,
     ...                                        expiry, call_price)
-    >>> round(implied_vol, 2)
+    >>> np.round(implied_vol, 2)
     0.2
     >>> implied_vol = blackscholes.implied_vol(underlying_price, strike,
     ...                                        expiry, put_price, put=True)
-    >>> round(implied_vol, 2)
+    >>> np.round(implied_vol, 2)
     0.2
 
     """
@@ -149,17 +151,18 @@ def delta(underlying_price, strike, expiry, sigma, put=False):
     Example
     -------
 
+    >>> import numpy as np
     >>> from fyne import blackscholes
     >>> sigma = 0.2
     >>> underlying_price = 100.
     >>> strike = 90.
     >>> expiry = 0.5
     >>> call_delta = blackscholes.delta(underlying_price, strike, expiry, sigma)
-    >>> round(call_delta, 2)
+    >>> np.round(call_delta, 2)
     0.79
     >>> put_delta = blackscholes.delta(underlying_price, strike, expiry, sigma,
     ...                                put=True)
-    >>> round(put_delta, 2)
+    >>> np.round(put_delta, 2)
     -0.21
 
     """
@@ -195,13 +198,14 @@ def vega(underlying_price, strike, expiry, sigma):
     Example
     -------
 
+    >>> import numpy as np
     >>> from fyne import blackscholes
     >>> sigma = 0.2
     >>> underlying_price = 100.
     >>> strike = 90.
     >>> maturity = 0.5
     >>> vega = blackscholes.vega(underlying_price, strike, maturity, sigma)
-    >>> round(vega, 2)
+    >>> np.round(vega, 2)
     20.23
 
     """

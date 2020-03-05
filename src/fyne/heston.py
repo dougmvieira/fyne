@@ -46,6 +46,7 @@ def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
     Example
     -------
 
+    >>> import numpy as np
     >>> from fyne import heston
     >>> v, kappa, theta, nu, rho = 0.2, 1.3, 0.04, 0.4, -0.3
     >>> underlying_price = 100.
@@ -53,11 +54,11 @@ def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
     >>> expiry = 0.5
     >>> call_price = heston.formula(underlying_price, strike, expiry, v, kappa,
     ...                             theta, nu, rho)
-    >>> round(call_price, 2)
+    >>> np.round(call_price, 2)
     16.32
     >>> put_price = heston.formula(underlying_price, strike, expiry, v, kappa,
     ...                            theta, nu, rho, put=True)
-    >>> round(put_price, 2)
+    >>> np.round(put_price, 2)
     6.32
 
     """
@@ -104,6 +105,7 @@ def delta(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
     Example
     -------
 
+    >>> import numpy as np
     >>> from fyne import heston
     >>> v, kappa, theta, nu, rho = 0.2, 1.3, 0.04, 0.4, -0.3
     >>> underlying_price = 100.
@@ -111,11 +113,11 @@ def delta(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
     >>> maturity = 0.5
     >>> call_delta = heston.delta(underlying_price, strike, maturity, v, kappa,
     ...                           theta, nu, rho)
-    >>> round(call_delta, 2)
+    >>> np.round(call_delta, 2)
     0.72
     >>> put_delta = heston.delta(underlying_price, strike, maturity, v, kappa,
     ...                      theta, nu, rho, put=True)
-    >>> round(put_delta, 2)
+    >>> np.round(put_delta, 2)
     -0.28
 
     """
@@ -159,6 +161,7 @@ def vega(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
     Example
     -------
 
+    >>> import numpy as np
     >>> from fyne import heston
     >>> v, kappa, theta, nu, rho = 0.2, 1.3, 0.04, 0.4, -0.3
     >>> underlying_price = 100.
@@ -166,7 +169,7 @@ def vega(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
     >>> maturity = 0.5
     >>> vega = heston.vega(underlying_price, strike, maturity, v, kappa, theta,
     ...                    nu, rho)
-    >>> round(vega, 2)
+    >>> np.round(vega, 2)
     22.5
 
     """
@@ -234,7 +237,7 @@ def calibration_crosssectional(underlying_price, strikes, expiries,
     >>> calibrated = heston.calibration_crosssectional(
     ...     underlying_price, strikes, expiries, option_prices, initial_guess,
     ...     put)
-    >>> [round(param, 4) for param in calibrated]
+    >>> [np.round(param, 4) for param in calibrated]
     [0.0457, 5.07, 0.0457, 0.48, -0.767]
 
     """
@@ -316,7 +319,7 @@ def calibration_panel(underlying_prices, strikes, expiries, option_prices,
     ...     put)
     >>> np.round(vols, 4)
     array([0.05 , 0.045, 0.055])
-    >>> [round(param, 4) for param in (kappa, theta, nu, rho)]
+    >>> [np.round(param, 4) for param in (kappa, theta, nu, rho)]
     [5.07, 0.0457, 0.48, -0.767]
 
     """
@@ -396,7 +399,7 @@ def calibration_vol(underlying_price, strikes, expiries, option_prices, kappa,
     >>> calibrated_vol = heston.calibration_vol(
     ...     underlying_price, strikes, expiries, option_prices, kappa, theta,
     ...     nu, rho, put)
-    >>> round(calibrated_vol, 4)
+    >>> np.round(calibrated_vol, 4)
     0.0457
 
     """
