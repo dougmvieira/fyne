@@ -12,10 +12,19 @@ matrix:
     - python: '3.5'
       env:
         - TOXENV=py35,report,codecov
+    - python: '3.6'
+      env:
+        - TOXENV=py36,report,codecov
     - python: '3.7'
       dist: xenial
       env:
         - TOXENV=py37,report,codecov
+    - python: '3.8'
+      env:
+        - TOXENV=py38,report,codecov
+    - python: 'pypy3'
+      env:
+        - TOXENV=pypy3,report,codecov
 before_install:
   - python --version
   - uname -a
