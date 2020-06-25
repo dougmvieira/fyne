@@ -1,10 +1,12 @@
 import cmath
+from ctypes import c_void_p
 from itertools import repeat
 from math import pi
 from timeit import Timer
 
 import numpy as np
-from numba import njit
+from numba import carray, cfunc, njit
+from scipy import LowLevelCallable
 from scipy.integrate import quad
 from scipy.optimize import leastsq
 
@@ -412,6 +414,7 @@ def calibration_vol(underlying_price, strikes, expiries, option_prices, kappa,
 
     vol, = _reduced_calib_vol(cs, ks, expiries, ws, kappa, kappa*theta, nu,
                               rho, np.array([vol_guess]))
+
     return vol
 
 
@@ -463,44 +466,52 @@ def _heston_psi(u, t, kappa, a, nu, rho):
     return psi_1, psi_2
 
 
-@njit
-def _integrand(u, k, t, v, kappa, a, nu, rho):
+@cfunc('double(double, CPointer(double))')
+def _integrand(u, params):
+    k, t, v, kappa, a, nu, rho = carray(params, (7,))
     psi_1, psi_2 = _heston_psi(u - 0.5j, t, kappa, a, nu, rho)
     return common._lipton_integrand(u, k, v, psi_1, psi_2)
 
 
 @np.vectorize
 def _reduced_formula(k, t, v, kappa, a, nu, rho):
-    c = 1 - quad(lambda u: _integrand(u, k, t, v, kappa, a, nu, rho), 0,
-                 np.inf)[0]/pi
+    params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
+    f = LowLevelCallable(_integrand.ctypes, params, 'double (double, void *)')
+    c = 1 - quad(f, 0, np.inf)[0]/pi
 
     common._assert_no_arbitrage(1., c, np.exp(k))
 
     return c
 
 
-@njit
-def _delta_integrand(u, k, t, v, kappa, a, nu, rho):
+@cfunc('double(double, CPointer(double))')
+def _delta_integrand(u, params):
+    k, t, v, kappa, a, nu, rho = carray(params, (7,))
     psi_1, psi_2 = _heston_psi(u - 1j, t, kappa, a, nu, rho)
     return common._delta_integrand(u, k, v, psi_1, psi_2)
 
 
 @np.vectorize
 def _reduced_delta(k, t, v, kappa, a, nu, rho):
-    return 0.5 + quad(lambda u: _delta_integrand(u, k, t, v, kappa, a, nu,
-                                                 rho), 0, np.inf)[0]/pi
+    params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
+    f = LowLevelCallable(_delta_integrand.ctypes, params,
+                         'double (double, void *)')
+    return 0.5 + quad(f, 0, np.inf)[0]/pi
 
 
-@njit
-def _vega_integrand(u, k, t, v, kappa, a, nu, rho):
+@cfunc('double(double, CPointer(double))')
+def _vega_integrand(u, params):
+    k, t, v, kappa, a, nu, rho = carray(params, (7,))
     psi_1, psi_2 = _heston_psi(u - 0.5j, t, kappa, a, nu, rho)
     return common._vega_integrand(u, k, v, psi_1, psi_2)
 
 
 @np.vectorize
 def _reduced_vega(k, t, v, kappa, a, nu, rho):
-    return -quad(lambda u: _vega_integrand(u, k, t, v, kappa, a, nu, rho), 0,
-                 np.inf)[0]/pi
+    params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
+    f = LowLevelCallable(_vega_integrand.ctypes, params,
+                         'double (double, void *)')
+    return -quad(f, 0, np.inf)[0]/pi
 
 
 def _loss_xsect(cs, ks, ts, ws, params):
