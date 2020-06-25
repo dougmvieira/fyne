@@ -3,6 +3,9 @@ from fyne import blackscholes, heston
 from pytest import raises, warns
 
 
+np.warnings.filterwarnings('always')
+
+
 def test_blackscholes_impliedvol():
     sigma = 0.2
     underlying_price = 100.
