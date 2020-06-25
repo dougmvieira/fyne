@@ -3,9 +3,6 @@ from fyne import blackscholes, heston
 from pytest import raises, warns
 
 
-np.warnings.filterwarnings('always')
-
-
 def test_blackscholes_impliedvol():
     sigma = 0.2
     underlying_price = 100.
@@ -43,7 +40,8 @@ def test_blackscholes_impliedvol_exception():
                                  option_price)
 
     option_price = np.array([0.9, 20, np.nan])
-    with warns(RuntimeWarning):
+    with np.testing.suppress_warnings() as sup:
+        sup.filter(RuntimeWarning)
         ivs = blackscholes.implied_vol(underlying_price, strike, expiry,
                                        option_price, assert_no_arbitrage=False)
     assert np.isnan(ivs[0]) and not np.isnan(ivs[1]) and np.isnan(ivs[2])
