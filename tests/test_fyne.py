@@ -1,6 +1,6 @@
 import numpy as np
 from fyne import blackscholes, heston
-from pytest import raises, warns
+from pytest import raises
 
 
 def test_blackscholes_impliedvol():
