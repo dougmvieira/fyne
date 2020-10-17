@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import subprocess
 import sys
-from os.path import abspath, dirname, exists, join
+from os.path import abspath
+from os.path import dirname
+from os.path import exists
+from os.path import join
 
 base_path = dirname(dirname(abspath(__file__)))
 
@@ -39,6 +46,7 @@ def exec_in_env():
     print("Re-executing with: {0}".format(python_executable))
     print("+ exec", python_executable, __file__, "--no-env")
     os.execv(python_executable, [python_executable, __file__, "--no-env"])
+
 
 def main():
     import jinja2
@@ -79,4 +87,3 @@ if __name__ == "__main__":
     else:
         print("Unexpected arguments {0}".format(args), file=sys.stderr)
         sys.exit(1)
-
