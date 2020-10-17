@@ -32,6 +32,9 @@ install:
   - tox --version
   - |
     set -ex
+    if [[ $TRAVIS_PYTHON_VERSION == 'py36' ]]; then
+        python -m pip install numpy
+    fi
     if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then
         (cd $HOME
          wget https://bitbucket.org/pypy/pypy/downloads/pypy2-v6.0.0-linux64.tar.bz2
