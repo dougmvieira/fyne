@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 import os
 
+import sphinx_py3doc_enhanced_theme
+
 
 extensions = [
     'matplotlib.sphinxext.plot_directive',
@@ -36,7 +38,6 @@ extlinks = {
     'issue': ('https://github.com/dougmvieira/fyne/issues/%s', '#'),
     'pr': ('https://github.com/dougmvieira/fyne/pull/%s', 'PR #'),
 }
-import sphinx_py3doc_enhanced_theme
 html_theme = "sphinx_py3doc_enhanced_theme"
 html_theme_path = [sphinx_py3doc_enhanced_theme.get_html_theme_path()]
 html_theme_options = {
