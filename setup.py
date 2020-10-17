@@ -63,9 +63,8 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     python_requires='>=3.6',
-    setup_requires=['numpy'],
     install_requires=[
-        'numba', 'numpy', 'scipy',
+        'numpy', 'numba', 'scipy',
     ],
     extras_require={
         # eg:
