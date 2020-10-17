@@ -1,6 +1,6 @@
 import numpy as np
 from fyne import blackscholes, heston
-from pytest import raises
+from pytest import mark, raises
 
 
 def test_blackscholes_impliedvol():
@@ -151,8 +151,15 @@ def test_heston_calibration_vol():
     assert abs(vol - calibrated_vol) < 1e-6
 
 
-def test_heston_benchmark():
-    assert heston.benchmark(1) > 0
+@mark.parametrize('n', [2, 5, 15, 40, 100])
+def test_heston_performance(benchmark, n):
+    t, v, kappa, a, nu, rho = 0.5, 0.0457, 5.07, 0.2317, 0.48, -0.767
+    ks = np.linspace(np.log(0.8), np.log(1.2), n)
+
+    # First execution to trigger JIT
+    heston._reduced_formula(ks, t, v, kappa, a, nu, rho)
+
+    benchmark(heston._reduced_formula, ks, t, v, kappa, a, nu, rho)
 
 
 def test_heston_delta():

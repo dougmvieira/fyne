@@ -1,8 +1,6 @@
 import cmath
 from ctypes import c_void_p
-from itertools import repeat
 from math import pi
-from timeit import Timer
 
 import numpy as np
 from numba import carray, cfunc, njit
@@ -416,43 +414,6 @@ def calibration_vol(underlying_price, strikes, expiries, option_prices, kappa,
                               rho, np.array([vol_guess]))
 
     return vol
-
-
-def benchmark(n):
-    """Benchmarking function for the Heston formula implementation
-
-    This function computes the time elapsed to evaluate the Heston formula
-    under some example parameters for a specific maturity and a given number of
-    strikes. The bounds of the strikes is kept fixed.
-
-    Parameters
-    ----------
-    n : int
-        Number of strikes to be evaluated
-
-    Returns
-    -------
-    tuple of float
-        Returns the time spent performing the Heston formula computations and
-    its standard deviation.
-
-    """
-
-    setup = """
-import numpy as np
-
-from fyne.heston import _reduced_formula
-
-
-t, v, kappa, a, nu, rho = 0.5, 0.0457, 5.07, 0.2317, 0.48, -0.767
-ks = np.linspace(np.log(0.8), np.log(1.2), {})
-
-# First execution to trigger JIT
-_reduced_formula(0., t, v, kappa, a, nu, rho)""".format(n)
-
-    timer = Timer('[_reduced_formula(k, t, v, kappa, a, nu, rho) for k in ks]',
-                  setup=setup)
-    return min(map(lambda t: t.timeit(number=50)/50., repeat(timer, 5)))
 
 
 @njit
