@@ -64,7 +64,7 @@ setup(
     ],
     python_requires='>=3.6',
     install_requires=[
-        'numpy', 'numba', 'scipy',
+        'numpy', 'numba', 'scipy', 'py_lets_be_rational',
     ],
     extras_require={
         # eg:
