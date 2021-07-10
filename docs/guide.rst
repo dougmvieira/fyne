@@ -8,10 +8,10 @@ User guide
 Models
 ------
 
-The models that are currently implemented in :mod:`fyne` are the Black-Scholes
-and Heston models. In order to make notation clear, especially with the naming
-of the parameters, we state below the discounted underlying price dynamics of
-the models under the risk-neutral measure.
+The models that are currently implemented in :mod:`fyne` are the Black-Scholes,
+Heston and Wishart models. In order to make notation clear, especially with the
+naming of the parameters, we state below the discounted underlying price
+dynamics of the models under the risk-neutral measure.
 
 * Black-Scholes
 
@@ -26,6 +26,16 @@ the models under the risk-neutral measure.
    dS_t      & = \sqrt{V_t} S_t dW_t \\
    dV_t      & = \kappa(\theta - V_t)dt + \nu \sqrt{V_t}dZ_t \\
    d[W, Z]_t & = \rho dt
+
+* Wishart
+
+.. math::
+
+   dS_t      & = S_t \mathrm{Tr} \left( \sqrt{V_t} \left(
+                     dW_t R + dZ_t \sqrt{I - RR^T} \right) \right) \\
+   dV_t      & = \left(\beta QQ^T + M V_t + V_t M^T \right) dt
+               + \sqrt{V_t} dW_t Q + Q^T dW_t^T \sqrt{V_t} \\
+   d[W, Z]_t & = 0
 
 
 Pricing
