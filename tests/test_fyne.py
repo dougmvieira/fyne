@@ -1,5 +1,5 @@
 import numpy as np
-from fyne import blackscholes, heston
+from fyne import blackscholes, heston, wishart
 from pytest import mark, raises
 
 
@@ -208,3 +208,37 @@ def test_heston_vega():
                          put=True))
 
     assert abs(vega_exact - vega_finite_diffs) < 1e-3
+
+
+def test_wishart_delta():
+    params = dict(
+        vol=np.array([[0.0327, 0.0069],
+                      [0.0069, 0.0089]]),
+        beta=0.6229,
+        m=np.array([[-0.9858, -0.5224],
+                    [-0.1288, -0.9746]]),
+        q=np.array([[0.3193, 0.2590],
+                    [0.2899, 0.2469]]),
+        r=np.array([[-0.2116, -0.4428],
+                    [-0.2113, -0.5921]]),
+    )
+    underlying_price = 100.
+    strike = 90.
+    expiry = 0.5
+
+    delta_exact = wishart.delta(underlying_price, strike, expiry, **params)
+    delta_finite_diffs = 500.*(
+        wishart.formula(underlying_price + .001, strike, expiry, **params)
+        - wishart.formula(underlying_price - .001, strike, expiry, **params))
+
+    assert abs(delta_exact - delta_finite_diffs) < 1e-3
+
+    delta_exact = wishart.delta(underlying_price, strike, expiry, put=True,
+                                **params)
+    delta_finite_diffs = 500.*(
+        wishart.formula(underlying_price + .001, strike, expiry, put=True,
+                        **params)
+        - wishart.formula(underlying_price - .001, strike, expiry, put=True,
+                          **params))
+
+    assert abs(delta_exact - delta_finite_diffs) < 1e-3

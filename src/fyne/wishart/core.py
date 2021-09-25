@@ -5,8 +5,7 @@ from math import pi
 import numba as nb
 import numpy as np
 import scipy as sp
-from numba import carray, cfunc, njit, objmode, types
-from numba.types import ListType, complex128
+from numba import carray, cfunc, njit, objmode, types, typed
 from scipy.integrate import quad
 from scipy.linalg import expm
 from scipy.optimize import leastsq
@@ -14,7 +13,7 @@ from scipy.optimize import leastsq
 from fyne import common
 from fyne.wishart.rotation_count import count_rotations
 
-COMPLEX_MATRIX_TYPE = complex128[:, :]
+COMPLEX_MATRIX_TYPE = types.complex128[:, :]
 
 
 def formula(underlying_price, strike, expiry, vol, beta, q, m, r, put=False):
@@ -32,6 +31,8 @@ def formula(underlying_price, strike, expiry, vol, beta, q, m, r, put=False):
         Time remaining until the expiry of the option.
     vol : float matrix
         Instantaneous volatility matrix.
+    beta: float
+        Model parameter :math:`\beta`.
     q : float matrix
         Model parameter :math:`Q`.
     m : float matrix
@@ -52,6 +53,45 @@ def formula(underlying_price, strike, expiry, vol, beta, q, m, r, put=False):
     k = np.log(strike/underlying_price)
     call = _reduced_formula(k, expiry, vol, beta, q, m, r) * underlying_price
     return common._put_call_parity(call, underlying_price, strike, put)
+
+
+def delta(underlying_price, strike, expiry, vol, beta, q, m, r, put=False):
+    r"""Wishart Greek delta
+
+    Computes the Greek :math:`\Delta` (delta) of the option according to the
+    Wishart model.
+
+    Parameters
+    ----------
+    underlying_price : float
+        Price of the underlying asset.
+    strike : float
+        Strike of the option.
+    expiry : float
+        Time remaining until the expiry of the option.
+    vol : float
+        Instantaneous volatility.
+    beta: float
+        Model parameter :math:`\beta`.
+    q : float matrix
+        Model parameter :math:`Q`.
+    m : float matrix
+        Model parameter :math:`M`.
+    r : float matrix
+        Model parameter :math:`R`.
+    put : bool, optional
+        Whether the option is a put option. Defaults to `False`.
+
+    Returns
+    -------
+    float
+        Option Greek :math:`\Delta` (delta) according to Wishart formula.
+
+    """
+
+    k = np.log(strike/underlying_price)
+    call_delta = _reduced_delta(k, expiry, vol, beta, q, m, r)
+    return common._put_call_parity_delta(call_delta, put)
 
 
 @njit
@@ -86,12 +126,21 @@ def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cach
 
 
 def _reduced_formula(k, t, v, beta, q, m, r):
-    rot_locs = nb.typed.List(lsttype=ListType(complex128))
+    rot_locs = nb.typed.List(lsttype=types.ListType(types.complex128))
     cached_u, cached_quadrant = np.array([-0.5j]), np.array([0])
     def integrand(u):
         psi = log_characteristic_function(u - 0.5j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
         integrand = cmath.exp(psi + (0.5 - 1j * u) * k).real / (u ** 2 + 0.25)
         return integrand
-    c = 1 - quad(integrand, 0, np.inf)[0] / np.pi
+    return 1 - quad(integrand, 0, np.inf)[0] / np.pi
 
-    return c
+
+def _reduced_delta(k, t, v, beta, q, m, r):
+    rot_locs = typed.List(lsttype=types.ListType(types.complex128))
+    cached_u, cached_quadrant = np.array([-1j]), np.array([0])
+    psi_dem = log_characteristic_function(-1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
+    def integrand(u):
+        psi = log_characteristic_function(u - 1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
+        integrand = (cmath.exp(-1j * u * k + psi - psi_dem) / (1j * u)).real
+        return integrand
+    return 0.5 + quad(integrand, 0, np.inf)[0] / np.pi
