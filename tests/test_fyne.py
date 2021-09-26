@@ -242,3 +242,33 @@ def test_wishart_delta():
                           **params))
 
     assert abs(delta_exact - delta_finite_diffs) < 1e-3
+
+
+def test_wishart_vega():
+    n = 2
+    vol=np.array([[0.0327, 0.0069],
+                  [0.0069, 0.0089]])
+    params = dict(
+        beta=0.6229,
+        m=np.array([[-0.9858, -0.5224],
+                    [-0.1288, -0.9746]]),
+        q=np.array([[0.3193, 0.2590],
+                    [0.2899, 0.2469]]),
+        r=np.array([[-0.2116, -0.4428],
+                    [-0.2113, -0.5921]]),
+    )
+    underlying_price = 100.
+    strike = 90.
+    expiry = 0.5
+
+    vega_exact = wishart.vega(underlying_price, strike, expiry, vol, **params)
+    vega_finite_diffs = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            h = np.zeros((n, n))
+            h[i, j] = 1e-9
+            vega_finite_diffs[i, j] = 5e8 * (
+                wishart.formula(underlying_price, strike, expiry, vol + h, **params)
+                - wishart.formula(underlying_price, strike, expiry, vol - h, **params))
+
+            assert abs(vega_exact[i, j] - vega_finite_diffs[i, j]) < 1e-3

@@ -1,4 +1,4 @@
-from .core import formula, delta
+from .core import formula, delta, vega
 
 
-__all__ = ['formula', 'delta']
+__all__ = ['formula', 'delta', 'vega']

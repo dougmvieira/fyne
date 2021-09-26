@@ -94,8 +94,45 @@ def delta(underlying_price, strike, expiry, vol, beta, q, m, r, put=False):
     return common._put_call_parity_delta(call_delta, put)
 
 
+def vega(underlying_price, strike, expiry, vol, beta, q, m, r):
+    r"""Wishart Greek vega
+
+    Computes the Greek :math:`\mathcal{V}` (vega) of the option according to
+    the Wishart model. This is the gradient of the option price with respect to
+    the volatility matrix.
+
+    Parameters
+    ----------
+    underlying_price : float
+        Price of the underlying asset.
+    strike : float
+        Strike of the option.
+    expiry : float
+        Time remaining until the expiry of the option.
+    vol : float
+        Instantaneous volatility.
+    beta: float
+        Model parameter :math:`\beta`.
+    q : float matrix
+        Model parameter :math:`Q`.
+    m : float matrix
+        Model parameter :math:`M`.
+    r : float matrix
+        Model parameter :math:`R`.
+
+    Returns
+    -------
+    float
+        Option Greek :math:`\mathcal{V}` (vega) according to Wishart formula.
+
+    """
+
+    k = np.log(strike/underlying_price)
+    return _reduced_vega(k, expiry, vol, beta, q, m, r) * underlying_price
+
+
 @njit
-def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant):
+def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a):
     n = 2
     iu = 1j * u
 
@@ -117,7 +154,7 @@ def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cach
     rot = count_rotations(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
     log_det_f = cmath.log(np.linalg.det(f)) + 2j * cmath.pi * rot
 
-    a = np.linalg.solve(f, g)
+    a[:, :] = np.linalg.solve(f, g)
     c = (
         -iu * t * beta * np.sum(r * q)
         - (beta / 2) * (np.trace(m) * t + log_det_f)
@@ -128,8 +165,9 @@ def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cach
 def _reduced_formula(k, t, v, beta, q, m, r):
     rot_locs = nb.typed.List(lsttype=types.ListType(types.complex128))
     cached_u, cached_quadrant = np.array([-0.5j]), np.array([0])
+    a = np.zeros((2, 2), dtype=np.complex128)
     def integrand(u):
-        psi = log_characteristic_function(u - 0.5j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
+        psi = log_characteristic_function(u - 0.5j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
         integrand = cmath.exp(psi + (0.5 - 1j * u) * k).real / (u ** 2 + 0.25)
         return integrand
     return 1 - quad(integrand, 0, np.inf)[0] / np.pi
@@ -138,9 +176,26 @@ def _reduced_formula(k, t, v, beta, q, m, r):
 def _reduced_delta(k, t, v, beta, q, m, r):
     rot_locs = typed.List(lsttype=types.ListType(types.complex128))
     cached_u, cached_quadrant = np.array([-1j]), np.array([0])
-    psi_dem = log_characteristic_function(-1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
+    a = np.zeros((2, 2), dtype=np.complex128)
+    psi_dem = log_characteristic_function(-1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
     def integrand(u):
-        psi = log_characteristic_function(u - 1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
+        psi = log_characteristic_function(u - 1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
         integrand = (cmath.exp(-1j * u * k + psi - psi_dem) / (1j * u)).real
         return integrand
     return 0.5 + quad(integrand, 0, np.inf)[0] / np.pi
+
+
+def _reduced_vega(k, t, v, beta, q, m, r):
+    n = 2
+    rot_locs = nb.typed.List(lsttype=types.ListType(types.complex128))
+    cached_u, cached_quadrant = np.array([-0.5j]), np.array([0])
+    a = np.zeros((n, n), dtype=np.complex128)
+    vega = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            def integrand(u):
+                psi = log_characteristic_function(u - 0.5j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
+                integrand = (a[i, j] * cmath.exp(psi + (0.5 - 1j * u) * k)).real / (u ** 2 + 0.25)
+                return integrand
+            vega[i, j] = - quad(integrand, 0, np.inf)[0] / np.pi
+    return vega
