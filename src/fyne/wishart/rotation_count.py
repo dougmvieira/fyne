@@ -95,7 +95,7 @@ def find_next_quadrant(u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_i
     return u, curr_n_iter + 1, False
 
 
-@njit#(int64(complex128, float64, float64[:, :], float64, float64[:, :], float64[:, :], float64[:, :]), ListType(complex128), float64[:], float64[:])
+@njit#(int64(complex128, float64, float64[:, :], float64, float64[:, :], float64[:, :], float64[:, :], ListType(complex128), complex128[:], int64[:]))
 def count_rotations(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant):
     u_max = u
     u, = cached_u
