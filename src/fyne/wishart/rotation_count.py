@@ -1,8 +1,8 @@
 import warnings
 
 import numpy as np
-from numba import errors, njit, objmode, typed
-from numba.types import ListType, Tuple, UniTuple, boolean, complex128, float64, int64
+from numba import errors, njit, objmode
+from numba.types import Tuple, UniTuple, boolean, complex128, float64, int64
 from scipy.linalg import expm
 
 warnings.simplefilter('ignore', category=errors.NumbaPerformanceWarning)
@@ -21,7 +21,7 @@ def t_dot(a, b):
     return c
 
 
-@njit(UniTuple(complex128, 2)(complex128, float64, float64[:, :], float64, float64[:, :], float64[:, :], float64[:, :]))
+@njit
 def det_f_with_derivative(u, t, v, beta, q, m, r):
     n, _ = v.shape
     iu = 1j * u
@@ -29,7 +29,7 @@ def det_f_with_derivative(u, t, v, beta, q, m, r):
     z = np.zeros((2 * n, 2 * n), dtype=np.complex128)
     z[:n, :n] = m
     z[:n, -n:] = -2 * t_dot(q, q)
-    z[-n:, :n] = (iu * (iu  - 1) / 2) * np.eye(n)
+    z[-n:, :n] = (iu * (iu - 1) / 2) * np.eye(n)
     z[-n:, -n:] = -(m.T + 2 * iu * t_dot(r, q))
 
     dz = np.zeros((2 * n, 2 * n), dtype=np.complex128)
@@ -47,17 +47,17 @@ def det_f_with_derivative(u, t, v, beta, q, m, r):
     return det_f, d_det_f
 
 
-@njit(UniTuple(float64, 3)(float64, float64))
+@njit
 def sine_angle_with_derivative(x, y):
-    l_sq = x ** 2 + y ** 2
-    l = np.sqrt(l_sq)
-    sin = y / l
-    d_dx = -x * y / (l * l_sq)
-    d_dy = x ** 2 / (l * l_sq)
+    l2_sq = x ** 2 + y ** 2
+    l2 = np.sqrt(l2_sq)
+    sin = y / l2
+    d_dx = -x * y / (l2 * l2_sq)
+    d_dy = x ** 2 / (l2 * l2_sq)
     return sin, d_dx, d_dy
 
 
-@njit(UniTuple(float64, 2)(complex128, float64, float64[:, :], float64, float64[:, :], float64[:, :], float64[:, :]))
+@njit
 def sine_det_f_with_derivative(u, t, v, beta, q, m, r):
     det_f, d_det_f = det_f_with_derivative(u, t, v, beta, q, m, r)
     sin, d_dx, d_dy = sine_angle_with_derivative(det_f.real, det_f.imag)
@@ -65,7 +65,7 @@ def sine_det_f_with_derivative(u, t, v, beta, q, m, r):
     return sin, d_sin
 
 
-@njit(UniTuple(float64, 2)(complex128, float64, float64[:, :], float64, float64[:, :], float64[:, :], float64[:, :]))
+@njit
 def cosine_det_f_with_derivative(u, t, v, beta, q, m, r):
     det_f, d_det_f = det_f_with_derivative(u, t, v, beta, q, m, r)
     cos, d_dy, d_dx = sine_angle_with_derivative(det_f.imag, det_f.real)
@@ -73,7 +73,7 @@ def cosine_det_f_with_derivative(u, t, v, beta, q, m, r):
     return cos, d_cos
 
 
-@njit(Tuple([complex128, int64, boolean])(complex128, int64, complex128, float64, float64, int64, int64, float64, float64[:, :], float64, float64[:, :], float64[:, :], float64[:, :]))
+@njit
 def find_next_quadrant(u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_iter, t, v, beta, q, m, r):
     sign = -1 if (curr_quadrant == 0) or (curr_quadrant == 3) else 1
     for curr_n_iter in range(curr_n_iter, max_n_iter):
@@ -95,7 +95,7 @@ def find_next_quadrant(u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_i
     return u, curr_n_iter + 1, False
 
 
-@njit#(int64(complex128, float64, float64[:, :], float64, float64[:, :], float64[:, :], float64[:, :], ListType(complex128), complex128[:], int64[:]))
+@njit
 def count_rotations(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant):
     u_max = u
     u, = cached_u
@@ -108,7 +108,10 @@ def count_rotations(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
         curr_n_iter = 0
         not_converged = True
         while not_converged:
-            u, curr_n_iter, not_converged = find_next_quadrant(u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_iter, t, v, beta, q, m, r)
+            u, curr_n_iter, not_converged = find_next_quadrant(
+                u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_iter,
+                t, v, beta, q, m, r
+            )
             if curr_n_iter == max_n_iter:
                 break
             curr_quadrant = (curr_quadrant + 1) % 4
