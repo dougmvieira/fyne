@@ -246,8 +246,8 @@ def test_wishart_delta():
 
 def test_wishart_vega():
     n = 2
-    vol=np.array([[0.0327, 0.0069],
-                  [0.0069, 0.0089]])
+    vol = np.array([[0.0327, 0.0069],
+                    [0.0069, 0.0089]])
     params = dict(
         beta=0.6229,
         q=np.array([[0.3193, 0.2590],

@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 from numba import errors, njit, objmode
-from numba.types import Tuple, UniTuple, boolean, complex128, float64, int64
+from numba.types import complex128
 from scipy.linalg import expm
 
 warnings.simplefilter('ignore', category=errors.NumbaPerformanceWarning)

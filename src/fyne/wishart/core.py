@@ -1,13 +1,10 @@
 import cmath
 from concurrent.futures import ProcessPoolExecutor
-from ctypes import c_void_p
 from itertools import repeat
-from math import pi
 
 import numba as nb
 import numpy as np
-import scipy as sp
-from numba import carray, cfunc, njit, objmode, types, typed
+from numba import njit, objmode, types, typed
 from scipy.integrate import quad
 from scipy.linalg import expm
 from scipy.optimize import leastsq
@@ -102,6 +99,7 @@ def delta(underlying_price, strike, expiry, vol, beta, q, m, r, put=False):
     """
 
     k = np.log(strike/underlying_price)
+
     @np.vectorize
     def vec_reduced_delta(k, t):
         return _reduced_delta(k, t, vol, beta, q, m, r)
@@ -143,6 +141,7 @@ def vega(underlying_price, strike, expiry, vol, beta, q, m, r):
     """
 
     k = np.log(strike/underlying_price)
+
     @np.vectorize
     def vec_reduced_vega(k, t):
         return _reduced_vega(k, t, vol, beta, q, m, r)
@@ -356,7 +355,7 @@ def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cach
     z = np.zeros((2 * n, 2 * n), dtype=np.complex128)
     z[:n, :n] = m
     z[:n, -n:] = -2 * q.T @ q
-    z[-n:, :n] = (iu * (iu  - 1) / 2) * np.eye(n)
+    z[-n:, :n] = (iu * (iu - 1) / 2) * np.eye(n)
     z[-n:, -n:] = -(m.T + 2 * iu * (r.T @ q))
 
     with objmode(exp_tz=COMPLEX_MATRIX_TYPE):
@@ -383,6 +382,7 @@ def _reduced_formula(k, t, v, beta, q, m, r):
     rot_locs = nb.typed.List(lsttype=types.ListType(types.complex128))
     cached_u, cached_quadrant = np.array([-0.5j]), np.array([0])
     a = np.zeros((2, 2), dtype=np.complex128)
+
     def integrand(u):
         psi = log_characteristic_function(u - 0.5j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
         integrand = cmath.exp(psi + (0.5 - 1j * u) * k).real / (u ** 2 + 0.25)
@@ -395,6 +395,7 @@ def _reduced_delta(k, t, v, beta, q, m, r):
     cached_u, cached_quadrant = np.array([-1j]), np.array([0])
     a = np.zeros((2, 2), dtype=np.complex128)
     psi_dem = log_characteristic_function(-1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
+
     def integrand(u):
         psi = log_characteristic_function(u - 1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
         integrand = (cmath.exp(-1j * u * k + psi - psi_dem) / (1j * u)).real
@@ -420,6 +421,7 @@ def _reduced_vega(k, t, v, beta, q, m, r):
 
 def _reduced_calib_xsect(cs, ks, ts, ws, v, beta, q, m, r, n_cores):
     n = 2
+
     def loss(params):
         v, beta, q, m, r = unpack_params(params, n)
         print(f'v = {v}')
@@ -446,6 +448,7 @@ def _reduced_calib_xsect(cs, ks, ts, ws, v, beta, q, m, r, n_cores):
 
 def _reduced_calib_vol(cs, ks, ts, ws, params, beta, q, m, r, n_cores):
     n = 2
+
     def loss(params):
         v = unpack_vol(params, n)
         print(f'v = {v}')
