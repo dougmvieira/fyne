@@ -1,5 +1,7 @@
 import cmath
+from concurrent.futures import ProcessPoolExecutor
 from ctypes import c_void_p
+from itertools import repeat
 from math import pi
 
 import numpy as np
@@ -63,9 +65,13 @@ def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
 
     """
 
-    k = np.log(strike/underlying_price)
+    ks = np.log(strike/underlying_price)
     a = kappa*theta
-    call = _reduced_formula(k, expiry, vol, kappa, a, nu, rho)*underlying_price
+    broadcasted = np.broadcast(ks, expiry, vol)
+    call = np.empty(broadcasted.shape)
+    call.flat = [_reduced_formula(k, t, v, kappa, a, nu, rho)
+                 for (k, t, v) in broadcasted]
+    call *= underlying_price
     return common._put_call_parity(call, underlying_price, strike, put)
 
 
@@ -341,7 +347,8 @@ def calibration_panel(underlying_prices, strikes, expiries, option_prices,
 
 
 def calibration_vol(underlying_price, strikes, expiries, option_prices, kappa,
-                    theta, nu, rho, put=False, vol_guess=0.1, weights=None):
+                    theta, nu, rho, put=False, vol_guess=0.1, weights=None,
+                    n_cores=None):
     r"""Heston volatility calibration
 
     Recovers the Heston instantaneous volatility from options prices at a
@@ -411,7 +418,7 @@ def calibration_vol(underlying_price, strikes, expiries, option_prices, kappa,
     ws = 1/cs if weights is None else weights/cs
 
     vol, = _reduced_calib_vol(cs, ks, expiries, ws, kappa, kappa*theta, nu,
-                              rho, np.array([vol_guess]))
+                              rho, np.array([vol_guess]), n_cores=n_cores)
 
     return vol
 
@@ -434,7 +441,6 @@ def _integrand(u, params):
     return common._lipton_integrand(u, k, v, psi_1, psi_2)
 
 
-@np.vectorize
 def _reduced_formula(k, t, v, kappa, a, nu, rho):
     params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
     f = LowLevelCallable(_integrand.ctypes, params, 'double (double, void *)')
@@ -519,9 +525,21 @@ def _loss_vol(cs, ks, ts, ws, kappa, a, nu, rho, params):
     return ws*(cs_heston - cs)
 
 
-def _reduced_calib_vol(cs, ks, ts, ws, kappa, a, nu, rho, params):
-    params, ier = leastsq(lambda params: _loss_vol(cs, ks, ts, ws, kappa, a,
-                                                   nu, rho, params), params)
+def _reduced_calib_vol(cs, ks, ts, ws, kappa, a, nu, rho, params, n_cores):
+    def loss(params):
+        v, = params
+        if n_cores is None:
+            cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho)
+                                  for k, t in zip(ks, ts)])
+        else:
+            with ProcessPoolExecutor(max_workers=n_cores) as executor:
+                futures = executor.map(
+                    _reduced_formula, ks, ts, *map(repeat, (v, kappa, a, nu, rho))
+                )
+                cs_heston = np.array(list(futures))
+        return ws * (cs_heston - cs)
+
+    params, ier = leastsq(loss, params)
 
     if ier not in [1, 2, 3, 4]:
         raise ValueError("Heston calibration failed. ier = {}".format(ier))
