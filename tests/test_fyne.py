@@ -164,9 +164,9 @@ def test_heston_performance(benchmark, n):
     _reduced_formula = np.vectorize(heston._reduced_formula)
 
     # First execution to trigger JIT
-    _reduced_formula(ks, t, v, kappa, a, nu, rho)
+    _reduced_formula(ks, t, v, kappa, a, nu, rho, True)
 
-    benchmark(_reduced_formula, ks, t, v, kappa, a, nu, rho)
+    benchmark(_reduced_formula, ks, t, v, kappa, a, nu, rho, True)
 
 
 def test_heston_delta():

@@ -11,10 +11,11 @@ from scipy.integrate import quad
 from scipy.optimize import leastsq
 
 from fyne import common
+from fyne import blackscholes
 
 
 def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
-            put=False):
+            put=False, assert_no_arbitrage=False):
     r"""Heston formula
 
     Computes the price of the option according to the Heston formula.
@@ -69,8 +70,10 @@ def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
     a = kappa*theta
     broadcasted = np.broadcast(ks, expiry, vol)
     call = np.empty(broadcasted.shape)
-    call.flat = [_reduced_formula(k, t, v, kappa, a, nu, rho)
-                 for (k, t, v) in broadcasted]
+    call.flat = [
+        _reduced_formula(k, t, v, kappa, a, nu, rho, assert_no_arbitrage)
+        for (k, t, v) in broadcasted
+    ]
     call *= underlying_price
     return common._put_call_parity(call, underlying_price, strike, put)
 
@@ -441,12 +444,20 @@ def _integrand(u, params):
     return common._lipton_integrand(u, k, v, psi_1, psi_2)
 
 
-def _reduced_formula(k, t, v, kappa, a, nu, rho):
+def _reduced_formula(k, t, v, kappa, a, nu, rho, assert_no_arbitrage):
+    strike = np.exp(k)
+    no_arb_lb = np.maximum(0., 1. - strike)
+    bs_c = blackscholes._reduced_formula(k, t, np.sqrt(v))
+    if bs_c - no_arb_lb < 1e-5:
+        return bs_c
     params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
     f = LowLevelCallable(_integrand.ctypes, params, 'double (double, void *)')
     c = 1 - quad(f, 0, np.inf)[0]/pi
 
-    common._assert_no_arbitrage(1., c, np.exp(k))
+    if assert_no_arbitrage:
+        common._assert_no_arbitrage(1., c, strike)
+    elif any(common._check_arbitrage(1, c, np.exp(k))):
+        c = np.nan
 
     return c
 
@@ -483,7 +494,7 @@ def _reduced_vega(k, t, v, kappa, a, nu, rho):
 
 def _loss_xsect(cs, ks, ts, ws, params):
     v, kappa, a, nu, rho = params
-    cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho)
+    cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho, True)
                           for k, t in zip(ks, ts)])
     return ws*(cs_heston - cs)
 
@@ -503,8 +514,9 @@ def _loss_panel(cs, ks, ts, ws, params):
     kappa, a, nu, rho = params[-4:]
     cs_heston = np.zeros(cs.shape)
     for i in range(len(vs)):
-        cs_heston[i, :] = [_reduced_formula(k, t, vs[i], kappa, a, nu, rho)
-                           for k, t in zip(ks[i, :], ts)]
+        cs_heston[i, :] = [
+            _reduced_formula(k, t, vs[i], kappa, a, nu, rho, True)
+            for k, t in zip(ks[i, :], ts)]
     return (ws*(cs_heston - cs)).flatten()
 
 
@@ -520,8 +532,9 @@ def _reduced_calib_panel(cs, ks, ts, ws, params):
 
 def _loss_vol(cs, ks, ts, ws, kappa, a, nu, rho, params):
     v, = params
-    cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho)
-                          for k, t in zip(ks, ts)])
+    cs_heston = np.array(
+        [_reduced_formula(k, t, v, kappa, a, nu, rho, True)
+         for k, t in zip(ks, ts)])
     return ws*(cs_heston - cs)
 
 
@@ -529,12 +542,14 @@ def _reduced_calib_vol(cs, ks, ts, ws, kappa, a, nu, rho, params, n_cores):
     def loss(params):
         v, = params
         if n_cores is None:
-            cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho)
-                                  for k, t in zip(ks, ts)])
+            cs_heston = np.array(
+                [_reduced_formula(k, t, v, kappa, a, nu, rho, True)
+                 for k, t in zip(ks, ts)])
         else:
             with ProcessPoolExecutor(max_workers=n_cores) as executor:
                 futures = executor.map(
-                    _reduced_formula, ks, ts, *map(repeat, (v, kappa, a, nu, rho))
+                    _reduced_formula, ks, ts,
+                    *map(repeat, (v, kappa, a, nu, rho, True))
                 )
                 cs_heston = np.array(list(futures))
         return ws * (cs_heston - cs)
