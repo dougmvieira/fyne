@@ -189,7 +189,7 @@ def vega(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
 
 def calibration_crosssectional(underlying_price, strikes, expiries,
                                option_prices, initial_guess, put=False,
-                               weights=None):
+                               weights=None, enforce_feller_cond=False):
     r"""Heston cross-sectional calibration
 
     Recovers the Heston model parameters from options prices at a single point
@@ -258,7 +258,9 @@ def calibration_crosssectional(underlying_price, strikes, expiries,
     vol0, kappa0, theta0, nu0, rho0 = initial_guess
     params = np.array([vol0, kappa0, kappa0*theta0, nu0, rho0])
 
-    vol, kappa, a, nu, rho = _reduced_calib_xsect(cs, ks, expiries, ws, params)
+    vol, kappa, a, nu, rho = _reduced_calib_xsect(
+        cs, ks, expiries, ws, params, enforce_feller_cond
+    )
 
     return vol, kappa, a/kappa, nu, rho
 
@@ -487,6 +489,15 @@ def _reduced_vega(k, t, v, kappa, a, nu, rho):
     return -quad(f, 0, np.inf)[0]/pi
 
 
+def _loss_xsect_feller(cs, ks, ts, ws, params):
+    v, kappa, a_excess, nu, rho = params
+    a = nu ** 2 * (np.exp(a_excess) + 1) / 2
+
+    cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho, True)
+                          for k, t in zip(ks, ts)])
+    return ws*(cs_heston - cs)
+
+
 def _loss_xsect(cs, ks, ts, ws, params):
     v, kappa, a, nu, rho = params
     cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho, True)
@@ -494,12 +505,26 @@ def _loss_xsect(cs, ks, ts, ws, params):
     return ws*(cs_heston - cs)
 
 
-def _reduced_calib_xsect(cs, ks, ts, ws, params):
-    params, ier = leastsq(lambda params: _loss_xsect(cs, ks, ts, ws, params),
-                          params)
+def _reduced_calib_xsect(cs, ks, ts, ws, params, feller):
+    if feller:
+        v, kappa, a, nu, rho = params
+        if 2 * a < nu ** 2:
+            raise ValueError('Initial guess violates Feller condition')
+        a_excess = np.log(2 * a / nu ** 2 - 1)
+        params = v, kappa, a_excess, nu, rho
+        loss = _loss_xsect_feller
+    else:
+        loss = _loss_xsect
+
+    params, ier = leastsq(lambda params: loss(cs, ks, ts, ws, params), params)
 
     if ier not in [1, 2, 3, 4]:
         raise ValueError("Heston calibration failed. ier = {}".format(ier))
+
+    if feller:
+        v, kappa, a_excess, nu, rho = params
+        a = nu ** 2 * (np.exp(a_excess) + 1) / 2
+        params = v, kappa, a, nu, rho
 
     return params
 
