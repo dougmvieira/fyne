@@ -11,7 +11,6 @@ from scipy.integrate import quad
 from scipy.optimize import leastsq
 
 from fyne import common
-from fyne import blackscholes
 
 
 def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
@@ -446,17 +445,13 @@ def _integrand(u, params):
 
 def _reduced_formula(k, t, v, kappa, a, nu, rho, assert_no_arbitrage):
     strike = np.exp(k)
-    no_arb_lb = np.maximum(0., 1. - strike)
-    bs_c = blackscholes._reduced_formula(k, t, np.sqrt(v))
-    if bs_c - no_arb_lb < 1e-5:
-        return bs_c
     params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
     f = LowLevelCallable(_integrand.ctypes, params, 'double (double, void *)')
     c = 1 - quad(f, 0, np.inf)[0]/pi
 
     if assert_no_arbitrage:
         common._assert_no_arbitrage(1., c, strike)
-    elif any(common._check_arbitrage(1, c, np.exp(k))):
+    elif any(common._check_arbitrage(1, c, strike)):
         c = np.nan
 
     return c
