@@ -2,7 +2,7 @@ from math import erf, exp, pi, sqrt
 
 import numba as nb
 import numpy as np
-from numba import float64, int64
+from numba import float64
 from scipy.stats import norm
 
 from fyne import common
