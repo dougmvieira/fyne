@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "fyne"
+version = "0.6.4"
+description = "Option pricing with affine models"
+authors = ["Doug V <dougmvieira@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "fyne", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.26.2"
+numba = "^0.58.1"
+scipy = "^1.11.4"
+
+[tool.poetry.group.dev.dependencies]
+isort = "^5.13.2"
+pytest = "^7.4.3"
+black = "^23.12.0"
+flake8 = "^6.1.0"
+pytest-benchmark = "^4.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
