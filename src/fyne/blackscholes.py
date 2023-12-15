@@ -3,7 +3,7 @@ from math import erf, exp, pi, sqrt
 import numba as nb
 import numpy as np
 from numba import float64, int64
-from py_lets_be_rational import lets_be_rational
+from scipy.stats import norm
 
 from fyne import common
 
@@ -107,23 +107,23 @@ def implied_vol(underlying_price, strike, expiry, option_price, put=False,
     """
     call = common._put_call_parity_reverse(option_price, underlying_price,
                                            strike, put)
-    b = option_price / np.sqrt(underlying_price * strike)
-    x = np.log(underlying_price / strike)
-    theta = np.where(put, -1, 1)
-
     if assert_no_arbitrage:
         common._assert_no_arbitrage(underlying_price, call, strike)
 
-    call, b, x, theta, expiry = np.broadcast_arrays(call, b, x, theta, expiry)
+    k = np.array(np.log(strike/underlying_price))
+    c = np.array(call/underlying_price)
+    k, expiry, c = np.broadcast_arrays(k, expiry, c)
     noarb_mask = ~np.any(
         common._check_arbitrage(underlying_price, call, strike), axis=0)
     noarb_mask &= ~np.any(
-        tuple(map(np.isnan, (b, x, theta, expiry))), axis=0)
+        tuple(map(np.isnan, (k, expiry, c))), axis=0)
 
-    iv = np.full(call.shape, np.nan)
-    iv[noarb_mask] = _reduced_implied_vol(
-        b[noarb_mask], x[noarb_mask], theta[noarb_mask], 2
+    iv0 = np.maximum(
+        norm.ppf(c[noarb_mask]), c[noarb_mask]
     ) / np.sqrt(expiry[noarb_mask])
+    iv = np.full(c.shape, np.nan)
+    iv[noarb_mask] = _reduced_implied_vol(k[noarb_mask], expiry[noarb_mask],
+                                          c[noarb_mask], iv0)
     return iv
 
 
@@ -253,11 +253,21 @@ def _reduced_vega(k, t, sigma):
     return _norm_pdf(d_plus)*sqrt(t)
 
 
-_reduced_implied_vol = nb.vectorize(
-    [float64(float64, float64, float64, int64)], nopython=True)(
-    vars(lets_be_rational)[
-        '_unchecked_normalised_implied_volatility_from_a_transformed_rational_'
-        'guess_with_limited_iterations'])
+@nb.vectorize([float64(float64, float64, float64, float64)], nopython=True)
+def _reduced_implied_vol(k, t, c, iv0):
+    """Reduced Implied volatility function
+    Used in `fyne.blackscholes.implied_vol`.
+    """
+
+    converged = False
+    for _ in range(10):
+        f = _reduced_formula(k, t, iv0) - c
+        if abs(f) < 1e-8:
+            converged = True
+            break
+        iv0 -= f/_reduced_vega(k, t, iv0)
+
+    return iv0 if converged else np.nan
 
 
 @nb.vectorize([float64(float64, float64, float64)], nopython=True)
