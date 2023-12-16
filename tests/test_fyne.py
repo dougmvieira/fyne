@@ -1,6 +1,7 @@
 import numpy as np
-from fyne import blackscholes, heston, wishart
 from pytest import mark, raises
+
+from fyne import blackscholes, heston, wishart
 
 
 def test_blackscholes_impliedvol():

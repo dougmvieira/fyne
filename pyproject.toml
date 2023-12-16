@@ -25,6 +25,10 @@ pytest-benchmark = "^4.0.0"
 [tool.black]
 line-length = 79
 
+[tool.isort]
+profile = "black"
+line_length = 79
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

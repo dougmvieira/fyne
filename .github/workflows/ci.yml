@@ -29,8 +29,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install poetry
         poetry install --with dev
-    - name: Format with black
+    - name: Format with black and isort
       run: |
+        poetry run isort --check src tests
         poetry run black --check src tests
     - name: Lint with flake8
       run: |

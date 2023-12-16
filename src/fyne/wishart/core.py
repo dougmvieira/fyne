@@ -4,7 +4,7 @@ from itertools import repeat
 
 import numba as nb
 import numpy as np
-from numba import njit, objmode, types, typed
+from numba import njit, objmode, typed, types
 from scipy.integrate import quad
 from scipy.linalg import expm
 from scipy.optimize import leastsq
