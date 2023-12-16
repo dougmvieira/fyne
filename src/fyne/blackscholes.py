@@ -50,14 +50,20 @@ def formula(underlying_price, strike, expiry, sigma, put=False):
     1.77
 
     """
-    k = np.array(np.log(strike/underlying_price))
+    k = np.array(np.log(strike / underlying_price))
     expiry, sigma = map(np.array, (expiry, sigma))
-    call = _reduced_formula(k, expiry, sigma)*underlying_price
+    call = _reduced_formula(k, expiry, sigma) * underlying_price
     return common._put_call_parity(call, underlying_price, strike, put)
 
 
-def implied_vol(underlying_price, strike, expiry, option_price, put=False,
-                assert_no_arbitrage=True):
+def implied_vol(
+    underlying_price,
+    strike,
+    expiry,
+    option_price,
+    put=False,
+    assert_no_arbitrage=True,
+):
     """Implied volatility function
 
     Inverts the Black-Scholes formula to find the volatility that matches the
@@ -105,25 +111,27 @@ def implied_vol(underlying_price, strike, expiry, option_price, put=False,
     0.2
 
     """
-    call = common._put_call_parity_reverse(option_price, underlying_price,
-                                           strike, put)
+    call = common._put_call_parity_reverse(
+        option_price, underlying_price, strike, put
+    )
     if assert_no_arbitrage:
         common._assert_no_arbitrage(underlying_price, call, strike)
 
-    k = np.array(np.log(strike/underlying_price))
-    c = np.array(call/underlying_price)
+    k = np.array(np.log(strike / underlying_price))
+    c = np.array(call / underlying_price)
     k, expiry, c = np.broadcast_arrays(k, expiry, c)
     noarb_mask = ~np.any(
-        common._check_arbitrage(underlying_price, call, strike), axis=0)
-    noarb_mask &= ~np.any(
-        tuple(map(np.isnan, (k, expiry, c))), axis=0)
+        common._check_arbitrage(underlying_price, call, strike), axis=0
+    )
+    noarb_mask &= ~np.any(tuple(map(np.isnan, (k, expiry, c))), axis=0)
 
-    iv0 = np.maximum(
-        norm.ppf(c[noarb_mask]), c[noarb_mask]
-    ) / np.sqrt(expiry[noarb_mask])
+    iv0 = np.maximum(norm.ppf(c[noarb_mask]), c[noarb_mask]) / np.sqrt(
+        expiry[noarb_mask]
+    )
     iv = np.full(c.shape, np.nan)
-    iv[noarb_mask] = _reduced_implied_vol(k[noarb_mask], expiry[noarb_mask],
-                                          c[noarb_mask], iv0)
+    iv[noarb_mask] = _reduced_implied_vol(
+        k[noarb_mask], expiry[noarb_mask], c[noarb_mask], iv0
+    )
     return iv
 
 
@@ -161,16 +169,19 @@ def delta(underlying_price, strike, expiry, sigma, put=False):
     >>> underlying_price = 100.
     >>> strike = 90.
     >>> expiry = 0.5
-    >>> call_delta = blackscholes.delta(underlying_price, strike, expiry, sigma)
+    >>> call_delta = blackscholes.delta(
+    ...     underlying_price, strike, expiry, sigma
+    ... )
     >>> np.round(call_delta, 2)
     0.79
-    >>> put_delta = blackscholes.delta(underlying_price, strike, expiry, sigma,
-    ...                                put=True)
+    >>> put_delta = blackscholes.delta(
+    ...     underlying_price, strike, expiry, sigma, put=True
+    ... )
     >>> np.round(put_delta, 2)
     -0.21
 
     """
-    k = np.array(np.log(strike/underlying_price))
+    k = np.array(np.log(strike / underlying_price))
     expiry, sigma = map(np.array, (expiry, sigma))
     call_delta = _reduced_delta(k, expiry, sigma)
     return common._put_call_parity_delta(call_delta, put)
@@ -213,19 +224,19 @@ def vega(underlying_price, strike, expiry, sigma):
     20.23
 
     """
-    k = np.array(np.log(strike/underlying_price))
+    k = np.array(np.log(strike / underlying_price))
     expiry, sigma = map(np.array, (expiry, sigma))
-    return _reduced_vega(k, expiry, sigma)*underlying_price
+    return _reduced_vega(k, expiry, sigma) * underlying_price
 
 
 @nb.vectorize([float64(float64)])
 def _norm_cdf(z):
-    return (1 + erf(z/sqrt(2)))/2
+    return (1 + erf(z / sqrt(2))) / 2
 
 
 @nb.vectorize([float64(float64)])
 def _norm_pdf(z):
-    return exp(-z**2/2)/sqrt(2*pi)
+    return exp(-(z**2) / 2) / sqrt(2 * pi)
 
 
 @nb.vectorize([float64(float64, float64, float64)], nopython=True)
@@ -234,11 +245,11 @@ def _reduced_formula(k, t, sigma):
 
     Used in `fyne.blackscholes.formula`.
     """
-    tot_std = sigma*sqrt(t)
-    d_plus = tot_std/2 - k/tot_std
+    tot_std = sigma * sqrt(t)
+    d_plus = tot_std / 2 - k / tot_std
     d_minus = d_plus - tot_std
 
-    return _norm_cdf(d_plus) - _norm_cdf(d_minus)*exp(k)
+    return _norm_cdf(d_plus) - _norm_cdf(d_minus) * exp(k)
 
 
 @nb.vectorize([float64(float64, float64, float64)], nopython=True)
@@ -247,10 +258,10 @@ def _reduced_vega(k, t, sigma):
 
     Used in `fyne.blackscholes.vega`.
     """
-    tot_std = sigma*sqrt(t)
-    d_plus = tot_std/2 - k/tot_std
+    tot_std = sigma * sqrt(t)
+    d_plus = tot_std / 2 - k / tot_std
 
-    return _norm_pdf(d_plus)*sqrt(t)
+    return _norm_pdf(d_plus) * sqrt(t)
 
 
 @nb.vectorize([float64(float64, float64, float64, float64)], nopython=True)
@@ -265,7 +276,7 @@ def _reduced_implied_vol(k, t, c, iv0):
         if abs(f) < 1e-8:
             converged = True
             break
-        iv0 -= f/_reduced_vega(k, t, iv0)
+        iv0 -= f / _reduced_vega(k, t, iv0)
 
     return iv0 if converged else np.nan
 
@@ -276,7 +287,7 @@ def _reduced_delta(k, t, sigma):
 
     Used in `fyne.blackscholes.delta`.
     """
-    tot_std = sigma*sqrt(t)
-    d_plus = tot_std/2 - k/tot_std
+    tot_std = sigma * sqrt(t)
+    d_plus = tot_std / 2 - k / tot_std
 
     return _norm_cdf(d_plus)

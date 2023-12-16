@@ -5,7 +5,7 @@ from numba import errors, njit, objmode
 from numba.types import complex128
 from scipy.linalg import expm
 
-warnings.simplefilter('ignore', category=errors.NumbaPerformanceWarning)
+warnings.simplefilter("ignore", category=errors.NumbaPerformanceWarning)
 
 COMPLEX_MATRIX_TYPE = complex128[:, :]
 
@@ -49,11 +49,11 @@ def det_f_with_derivative(u, t, v, beta, q, m, r):
 
 @njit
 def sine_angle_with_derivative(x, y):
-    l2_sq = x ** 2 + y ** 2
+    l2_sq = x**2 + y**2
     l2 = np.sqrt(l2_sq)
     sin = y / l2
     d_dx = -x * y / (l2 * l2_sq)
-    d_dy = x ** 2 / (l2 * l2_sq)
+    d_dy = x**2 / (l2 * l2_sq)
     return sin, d_dx, d_dy
 
 
@@ -74,7 +74,21 @@ def cosine_det_f_with_derivative(u, t, v, beta, q, m, r):
 
 
 @njit
-def find_next_quadrant(u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_iter, t, v, beta, q, m, r):
+def find_next_quadrant(
+    u,
+    curr_quadrant,
+    u_max,
+    eps,
+    delta,
+    curr_n_iter,
+    max_n_iter,
+    t,
+    v,
+    beta,
+    q,
+    m,
+    r,
+):
     sign = -1 if (curr_quadrant == 0) or (curr_quadrant == 3) else 1
     for curr_n_iter in range(curr_n_iter, max_n_iter):
         if (curr_quadrant == 0) or (curr_quadrant == 2):
@@ -96,10 +110,12 @@ def find_next_quadrant(u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_i
 
 
 @njit
-def count_rotations(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant):
+def count_rotations(
+    u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant
+):
     u_max = u
-    u, = cached_u
-    curr_quadrant, = cached_quadrant
+    (u,) = cached_u
+    (curr_quadrant,) = cached_quadrant
     assert u.imag == u_max.imag
     if u.real <= u_max.real:
         eps = 1e-2
@@ -109,8 +125,19 @@ def count_rotations(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
         not_converged = True
         while not_converged:
             u, curr_n_iter, not_converged = find_next_quadrant(
-                u, curr_quadrant, u_max, eps, delta, curr_n_iter, max_n_iter,
-                t, v, beta, q, m, r
+                u,
+                curr_quadrant,
+                u_max,
+                eps,
+                delta,
+                curr_n_iter,
+                max_n_iter,
+                t,
+                v,
+                beta,
+                q,
+                m,
+                r,
             )
             if curr_n_iter == max_n_iter:
                 break

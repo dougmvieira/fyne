@@ -13,8 +13,18 @@ from scipy.optimize import leastsq
 from fyne import common
 
 
-def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
-            put=False, assert_no_arbitrage=False):
+def formula(
+    underlying_price,
+    strike,
+    expiry,
+    vol,
+    kappa,
+    theta,
+    nu,
+    rho,
+    put=False,
+    assert_no_arbitrage=False,
+):
     r"""Heston formula
 
     Computes the price of the option according to the Heston formula.
@@ -65,8 +75,8 @@ def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
 
     """
 
-    ks = np.log(strike/underlying_price)
-    a = kappa*theta
+    ks = np.log(strike / underlying_price)
+    a = kappa * theta
     broadcasted = np.broadcast(ks, expiry, vol)
     call = np.empty(broadcasted.shape)
     call.flat = [
@@ -77,8 +87,9 @@ def formula(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
     return common._put_call_parity(call, underlying_price, strike, put)
 
 
-def delta(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
-          put=False):
+def delta(
+    underlying_price, strike, expiry, vol, kappa, theta, nu, rho, put=False
+):
     r"""Heston Greek delta
 
     Computes the Greek :math:`\Delta` (delta) of the option according to the
@@ -130,8 +141,8 @@ def delta(underlying_price, strike, expiry, vol, kappa, theta, nu, rho,
 
     """
 
-    k = np.log(strike/underlying_price)
-    a = kappa*theta
+    k = np.log(strike / underlying_price)
+    a = kappa * theta
     call_delta = _reduced_delta(k, expiry, vol, kappa, a, nu, rho)
     return common._put_call_parity_delta(call_delta, put)
 
@@ -182,14 +193,21 @@ def vega(underlying_price, strike, expiry, vol, kappa, theta, nu, rho):
 
     """
 
-    k = np.log(strike/underlying_price)
-    a = kappa*theta
-    return _reduced_vega(k, expiry, vol, kappa, a, nu, rho)*underlying_price
+    k = np.log(strike / underlying_price)
+    a = kappa * theta
+    return _reduced_vega(k, expiry, vol, kappa, a, nu, rho) * underlying_price
 
 
-def calibration_crosssectional(underlying_price, strikes, expiries,
-                               option_prices, initial_guess, put=False,
-                               weights=None, enforce_feller_cond=False):
+def calibration_crosssectional(
+    underlying_price,
+    strikes,
+    expiries,
+    option_prices,
+    initial_guess,
+    put=False,
+    weights=None,
+    enforce_feller_cond=False,
+):
     r"""Heston cross-sectional calibration
 
     Recovers the Heston model parameters from options prices at a single point
@@ -250,23 +268,31 @@ def calibration_crosssectional(underlying_price, strikes, expiries,
 
     """
 
-    calls = common._put_call_parity_reverse(option_prices, underlying_price,
-                                            strikes, put)
-    cs = calls/underlying_price
-    ks = np.log(strikes/underlying_price)
-    ws = 1/cs if weights is None else weights/cs
+    calls = common._put_call_parity_reverse(
+        option_prices, underlying_price, strikes, put
+    )
+    cs = calls / underlying_price
+    ks = np.log(strikes / underlying_price)
+    ws = 1 / cs if weights is None else weights / cs
     vol0, kappa0, theta0, nu0, rho0 = initial_guess
-    params = np.array([vol0, kappa0, kappa0*theta0, nu0, rho0])
+    params = np.array([vol0, kappa0, kappa0 * theta0, nu0, rho0])
 
     vol, kappa, a, nu, rho = _reduced_calib_xsect(
         cs, ks, expiries, ws, params, enforce_feller_cond
     )
 
-    return vol, kappa, a/kappa, nu, rho
+    return vol, kappa, a / kappa, nu, rho
 
 
-def calibration_panel(underlying_prices, strikes, expiries, option_prices,
-                      initial_guess, put=False, weights=None):
+def calibration_panel(
+    underlying_prices,
+    strikes,
+    expiries,
+    option_prices,
+    initial_guess,
+    put=False,
+    weights=None,
+):
     r"""Heston panel calibration
 
     Recovers the Heston model parameters from options prices across strikes,
@@ -335,24 +361,36 @@ def calibration_panel(underlying_prices, strikes, expiries, option_prices,
     """
 
     calls = common._put_call_parity_reverse(
-        option_prices, underlying_prices[:, None], strikes, put)
-    cs = calls/underlying_prices[:, None]
-    ks = np.log(strikes[None, :]/underlying_prices[:, None])
-    ws = 1/cs if weights is None else weights/cs
+        option_prices, underlying_prices[:, None], strikes, put
+    )
+    cs = calls / underlying_prices[:, None]
+    ks = np.log(strikes[None, :] / underlying_prices[:, None])
+    ws = 1 / cs if weights is None else weights / cs
     vol0, kappa0, theta0, nu0, rho0 = initial_guess
-    params = vol0*np.ones(len(underlying_prices) + 4)
-    params[-4:] = kappa0, kappa0*theta0, nu0, rho0
+    params = vol0 * np.ones(len(underlying_prices) + 4)
+    params[-4:] = kappa0, kappa0 * theta0, nu0, rho0
 
     calibrated = _reduced_calib_panel(cs, ks, expiries, ws, params)
     vols = calibrated[:-4]
     kappa, a, nu, rho = calibrated[-4:]
 
-    return vols, kappa, a/kappa, nu, rho
+    return vols, kappa, a / kappa, nu, rho
 
 
-def calibration_vol(underlying_price, strikes, expiries, option_prices, kappa,
-                    theta, nu, rho, put=False, vol_guess=0.1, weights=None,
-                    n_cores=None):
+def calibration_vol(
+    underlying_price,
+    strikes,
+    expiries,
+    option_prices,
+    kappa,
+    theta,
+    nu,
+    rho,
+    put=False,
+    vol_guess=0.1,
+    weights=None,
+    n_cores=None,
+):
     r"""Heston volatility calibration
 
     Recovers the Heston instantaneous volatility from options prices at a
@@ -400,45 +438,65 @@ def calibration_vol(underlying_price, strikes, expiries, option_prices, kappa,
 
     >>> import numpy as np
     >>> from fyne import heston
-    >>> vol, kappa, theta, nu, rho = 0.0457, 5.07, 0.0457, 0.48, -0.767
+    >>> vol = 0.0457
+    >>> params = (5.07, 0.0457, 0.48, -0.767)
     >>> underlying_price = 1640.
     >>> strikes = np.array([1312., 1312., 1640., 1640., 1968., 1968.])
     >>> expiries = np.array([0.25, 0.5, 0.25, 0.5, 0.25, 0.5])
     >>> put = np.array([False, False, False, False, True, True])
-    >>> option_prices = heston.formula(underlying_price, strikes, expiries, vol,
-    ...                                kappa, theta, nu, rho, put)
+    >>> option_prices = heston.formula(
+    ...     underlying_price, strikes, expiries, vol, *params, put
+    ... )
     >>> calibrated_vol = heston.calibration_vol(
-    ...     underlying_price, strikes, expiries, option_prices, kappa, theta,
-    ...     nu, rho, put)
+    ...     underlying_price, strikes, expiries, option_prices, *params, put
+    ... )
     >>> np.round(calibrated_vol, 4)
     0.0457
 
     """
 
-    calls = common._put_call_parity_reverse(option_prices, underlying_price,
-                                            strikes, put)
-    cs = calls/underlying_price
-    ks = np.log(strikes/underlying_price)
-    ws = 1/cs if weights is None else weights/cs
+    calls = common._put_call_parity_reverse(
+        option_prices, underlying_price, strikes, put
+    )
+    cs = calls / underlying_price
+    ks = np.log(strikes / underlying_price)
+    ws = 1 / cs if weights is None else weights / cs
 
-    vol, = _reduced_calib_vol(cs, ks, expiries, ws, kappa, kappa*theta, nu,
-                              rho, np.array([vol_guess]), n_cores=n_cores)
+    (vol,) = _reduced_calib_vol(
+        cs,
+        ks,
+        expiries,
+        ws,
+        kappa,
+        kappa * theta,
+        nu,
+        rho,
+        np.array([vol_guess]),
+        n_cores=n_cores,
+    )
 
     return vol
 
 
 @njit
 def _heston_psi(u, t, kappa, a, nu, rho):
-    d = cmath.sqrt(nu**2*(u**2 + 1j*u) + (kappa - 1j*nu*rho*u)**2)
-    g = (-d + kappa - 1j*nu*rho*u)/(d + kappa - 1j*nu*rho*u)
-    h = (g*cmath.exp(-d*t) - 1)/(g - 1)
-    psi_1 = a*(t*(-d + kappa - 1j*nu*rho*u) - 2*cmath.log(h))/nu**2
-    psi_2 = (1 - cmath.exp(-d*t))*(-d + kappa - 1j*nu*rho*u)/(
-        (-g*cmath.exp(-d*t) + 1)*nu**2)
+    d = cmath.sqrt(
+        nu**2 * (u**2 + 1j * u) + (kappa - 1j * nu * rho * u) ** 2
+    )
+    g = (-d + kappa - 1j * nu * rho * u) / (d + kappa - 1j * nu * rho * u)
+    h = (g * cmath.exp(-d * t) - 1) / (g - 1)
+    psi_1 = (
+        a * (t * (-d + kappa - 1j * nu * rho * u) - 2 * cmath.log(h)) / nu**2
+    )
+    psi_2 = (
+        (1 - cmath.exp(-d * t))
+        * (-d + kappa - 1j * nu * rho * u)
+        / ((-g * cmath.exp(-d * t) + 1) * nu**2)
+    )
     return psi_1, psi_2
 
 
-@cfunc('double(double, CPointer(double))')
+@cfunc("double(double, CPointer(double))")
 def _integrand(u, params):
     k, t, v, kappa, a, nu, rho = carray(params, (7,))
     psi_1, psi_2 = _heston_psi(u - 0.5j, t, kappa, a, nu, rho)
@@ -448,18 +506,18 @@ def _integrand(u, params):
 def _reduced_formula(k, t, v, kappa, a, nu, rho, assert_no_arbitrage):
     strike = np.exp(k)
     params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
-    f = LowLevelCallable(_integrand.ctypes, params, 'double (double, void *)')
-    c = 1 - quad(f, 0, np.inf)[0]/pi
+    f = LowLevelCallable(_integrand.ctypes, params, "double (double, void *)")
+    c = 1 - quad(f, 0, np.inf)[0] / pi
 
     if assert_no_arbitrage:
-        common._assert_no_arbitrage(1., c, strike)
+        common._assert_no_arbitrage(1.0, c, strike)
     elif any(common._check_arbitrage(1, c, strike)):
         c = np.nan
 
     return c
 
 
-@cfunc('double(double, CPointer(double))')
+@cfunc("double(double, CPointer(double))")
 def _delta_integrand(u, params):
     k, t, v, kappa, a, nu, rho = carray(params, (7,))
     psi_1, psi_2 = _heston_psi(u - 1j, t, kappa, a, nu, rho)
@@ -469,12 +527,13 @@ def _delta_integrand(u, params):
 @np.vectorize
 def _reduced_delta(k, t, v, kappa, a, nu, rho):
     params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
-    f = LowLevelCallable(_delta_integrand.ctypes, params,
-                         'double (double, void *)')
-    return 0.5 + quad(f, 0, np.inf)[0]/pi
+    f = LowLevelCallable(
+        _delta_integrand.ctypes, params, "double (double, void *)"
+    )
+    return 0.5 + quad(f, 0, np.inf)[0] / pi
 
 
-@cfunc('double(double, CPointer(double))')
+@cfunc("double(double, CPointer(double))")
 def _vega_integrand(u, params):
     k, t, v, kappa, a, nu, rho = carray(params, (7,))
     psi_1, psi_2 = _heston_psi(u - 0.5j, t, kappa, a, nu, rho)
@@ -484,33 +543,42 @@ def _vega_integrand(u, params):
 @np.vectorize
 def _reduced_vega(k, t, v, kappa, a, nu, rho):
     params = np.array([k, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
-    f = LowLevelCallable(_vega_integrand.ctypes, params,
-                         'double (double, void *)')
-    return -quad(f, 0, np.inf)[0]/pi
+    f = LowLevelCallable(
+        _vega_integrand.ctypes, params, "double (double, void *)"
+    )
+    return -quad(f, 0, np.inf)[0] / pi
 
 
 def _loss_xsect_feller(cs, ks, ts, ws, params):
     v, kappa, a_excess, nu, rho = params
-    a = nu ** 2 * (np.exp(a_excess) + 1) / 2
+    a = nu**2 * (np.exp(a_excess) + 1) / 2
 
-    cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho, True)
-                          for k, t in zip(ks, ts)])
-    return ws*(cs_heston - cs)
+    cs_heston = np.array(
+        [
+            _reduced_formula(k, t, v, kappa, a, nu, rho, True)
+            for k, t in zip(ks, ts)
+        ]
+    )
+    return ws * (cs_heston - cs)
 
 
 def _loss_xsect(cs, ks, ts, ws, params):
     v, kappa, a, nu, rho = params
-    cs_heston = np.array([_reduced_formula(k, t, v, kappa, a, nu, rho, True)
-                          for k, t in zip(ks, ts)])
-    return ws*(cs_heston - cs)
+    cs_heston = np.array(
+        [
+            _reduced_formula(k, t, v, kappa, a, nu, rho, True)
+            for k, t in zip(ks, ts)
+        ]
+    )
+    return ws * (cs_heston - cs)
 
 
 def _reduced_calib_xsect(cs, ks, ts, ws, params, feller):
     if feller:
         v, kappa, a, nu, rho = params
-        if 2 * a < nu ** 2:
-            raise ValueError('Initial guess violates Feller condition')
-        a_excess = np.log(2 * a / nu ** 2 - 1)
+        if 2 * a < nu**2:
+            raise ValueError("Initial guess violates Feller condition")
+        a_excess = np.log(2 * a / nu**2 - 1)
         params = v, kappa, a_excess, nu, rho
         loss = _loss_xsect_feller
     else:
@@ -523,7 +591,7 @@ def _reduced_calib_xsect(cs, ks, ts, ws, params, feller):
 
     if feller:
         v, kappa, a_excess, nu, rho = params
-        a = nu ** 2 * (np.exp(a_excess) + 1) / 2
+        a = nu**2 * (np.exp(a_excess) + 1) / 2
         params = v, kappa, a, nu, rho
 
     return params
@@ -536,13 +604,15 @@ def _loss_panel(cs, ks, ts, ws, params):
     for i in range(len(vs)):
         cs_heston[i, :] = [
             _reduced_formula(k, t, vs[i], kappa, a, nu, rho, True)
-            for k, t in zip(ks[i, :], ts)]
-    return (ws*(cs_heston - cs)).flatten()
+            for k, t in zip(ks[i, :], ts)
+        ]
+    return (ws * (cs_heston - cs)).flatten()
 
 
 def _reduced_calib_panel(cs, ks, ts, ws, params):
-    params, ier = leastsq(lambda params: _loss_panel(cs, ks, ts, ws, params),
-                          params)
+    params, ier = leastsq(
+        lambda params: _loss_panel(cs, ks, ts, ws, params), params
+    )
 
     if ier not in [1, 2, 3, 4]:
         raise ValueError("Heston calibration failed. ier = {}".format(ier))
@@ -551,24 +621,32 @@ def _reduced_calib_panel(cs, ks, ts, ws, params):
 
 
 def _loss_vol(cs, ks, ts, ws, kappa, a, nu, rho, params):
-    v, = params
+    (v,) = params
     cs_heston = np.array(
-        [_reduced_formula(k, t, v, kappa, a, nu, rho, True)
-         for k, t in zip(ks, ts)])
-    return ws*(cs_heston - cs)
+        [
+            _reduced_formula(k, t, v, kappa, a, nu, rho, True)
+            for k, t in zip(ks, ts)
+        ]
+    )
+    return ws * (cs_heston - cs)
 
 
 def _reduced_calib_vol(cs, ks, ts, ws, kappa, a, nu, rho, params, n_cores):
     def loss(params):
-        v, = params
+        (v,) = params
         if n_cores is None:
             cs_heston = np.array(
-                [_reduced_formula(k, t, v, kappa, a, nu, rho, True)
-                 for k, t in zip(ks, ts)])
+                [
+                    _reduced_formula(k, t, v, kappa, a, nu, rho, True)
+                    for k, t in zip(ks, ts)
+                ]
+            )
         else:
             with ProcessPoolExecutor(max_workers=n_cores) as executor:
                 futures = executor.map(
-                    _reduced_formula, ks, ts,
+                    _reduced_formula,
+                    ks,
+                    ts,
                     *map(repeat, (v, kappa, a, nu, rho, True))
                 )
                 cs_heston = np.array(list(futures))

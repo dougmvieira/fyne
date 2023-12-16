@@ -16,8 +16,18 @@ from fyne.wishart.utils import pack_params, pack_vol, unpack_params, unpack_vol
 COMPLEX_MATRIX_TYPE = types.complex128[:, :]
 
 
-def formula(underlying_price, strike, expiry, vol, beta, q, m, r, put=False,
-            n_cores=None):
+def formula(
+    underlying_price,
+    strike,
+    expiry,
+    vol,
+    beta,
+    q,
+    m,
+    r,
+    put=False,
+    n_cores=None,
+):
     r"""Wishart model formula
 
     Computes the price of the option according to the Wishart model formula.
@@ -50,16 +60,26 @@ def formula(underlying_price, strike, expiry, vol, beta, q, m, r, put=False,
     """
 
     if vol.shape != (2, 2):
-        raise NotImplementedError('Only 2-factor Wishart is currently available.')
-    ks = np.log(strike/underlying_price)
+        raise NotImplementedError(
+            "Only 2-factor Wishart is currently available."
+        )
+    ks = np.log(strike / underlying_price)
     broadcasted = np.broadcast(ks, expiry)
     call = np.empty(broadcasted.shape)
     if n_cores is None:
-        call.flat = [_reduced_formula(k, t, vol, beta, q, m, r)
-                     for (k, t) in broadcasted]
+        call.flat = [
+            _reduced_formula(k, t, vol, beta, q, m, r)
+            for (k, t) in broadcasted
+        ]
     else:
         with ProcessPoolExecutor(max_workers=n_cores) as executor:
-            call.flat = list(executor.map(_reduced_formula, *zip(*broadcasted), *map(repeat, (vol, beta, q, m, r))))
+            call.flat = list(
+                executor.map(
+                    _reduced_formula,
+                    *zip(*broadcasted),
+                    *map(repeat, (vol, beta, q, m, r)),
+                )
+            )
     call *= underlying_price
     return common._put_call_parity(call, underlying_price, strike, put)
 
@@ -98,11 +118,12 @@ def delta(underlying_price, strike, expiry, vol, beta, q, m, r, put=False):
 
     """
 
-    k = np.log(strike/underlying_price)
+    k = np.log(strike / underlying_price)
 
     @np.vectorize
     def vec_reduced_delta(k, t):
         return _reduced_delta(k, t, vol, beta, q, m, r)
+
     call_delta = vec_reduced_delta(k, expiry)
     return common._put_call_parity_delta(call_delta, put)
 
@@ -140,17 +161,25 @@ def vega(underlying_price, strike, expiry, vol, beta, q, m, r):
 
     """
 
-    k = np.log(strike/underlying_price)
+    k = np.log(strike / underlying_price)
 
     @np.vectorize
     def vec_reduced_vega(k, t):
         return _reduced_vega(k, t, vol, beta, q, m, r)
+
     return vec_reduced_vega(k, expiry) * underlying_price
 
 
-def calibration_crosssectional(underlying_price, strikes, expiries,
-                               option_prices, initial_guess, put=False,
-                               weights=None, n_cores=None):
+def calibration_crosssectional(
+    underlying_price,
+    strikes,
+    expiries,
+    option_prices,
+    initial_guess,
+    put=False,
+    weights=None,
+    n_cores=None,
+):
     r"""Wishart cross-sectional calibration
 
     Recovers the Wishart model parameters from options prices at a single point
@@ -232,22 +261,38 @@ def calibration_crosssectional(underlying_price, strikes, expiries,
 
     """
 
-    calls = common._put_call_parity_reverse(option_prices, underlying_price,
-                                            strikes, put)
+    calls = common._put_call_parity_reverse(
+        option_prices, underlying_price, strikes, put
+    )
     cs = calls / underlying_price
-    ks = np.log(strikes/underlying_price)
+    ks = np.log(strikes / underlying_price)
     ws = 1 / cs if weights is None else weights / cs
 
     vol0, beta0, q0, m0, r0 = initial_guess
     if vol0.shape != (2, 2):
-        raise NotImplementedError('Only 2-factor Wishart is currently available.')
+        raise NotImplementedError(
+            "Only 2-factor Wishart is currently available."
+        )
 
-    return _reduced_calib_xsect(cs, ks, expiries, ws, vol0, beta0, q0, m0, r0, n_cores)
+    return _reduced_calib_xsect(
+        cs, ks, expiries, ws, vol0, beta0, q0, m0, r0, n_cores
+    )
 
 
-def calibration_vol(underlying_price, strikes, expiries, option_prices,
-                    vol_guess, beta, q, m, r, put=False, weights=None,
-                    n_cores=None):
+def calibration_vol(
+    underlying_price,
+    strikes,
+    expiries,
+    option_prices,
+    vol_guess,
+    beta,
+    q,
+    m,
+    r,
+    put=False,
+    weights=None,
+    n_cores=None,
+):
     r"""Wishart volatility matrix calibration
 
     Recovers the Wishart instantaneous volatility matrix from options prices at
@@ -332,23 +377,36 @@ def calibration_vol(underlying_price, strikes, expiries, option_prices,
 
     """
 
-    calls = common._put_call_parity_reverse(option_prices, underlying_price,
-                                            strikes, put)
-    cs = calls/underlying_price
-    ks = np.log(strikes/underlying_price)
-    ws = 1/cs if weights is None else weights/cs
+    calls = common._put_call_parity_reverse(
+        option_prices, underlying_price, strikes, put
+    )
+    cs = calls / underlying_price
+    ks = np.log(strikes / underlying_price)
+    ws = 1 / cs if weights is None else weights / cs
 
-    return _reduced_calib_vol(cs, ks, expiries, ws, vol_guess, beta, q, m, r,
-                              n_cores)
+    return _reduced_calib_vol(
+        cs, ks, expiries, ws, vol_guess, beta, q, m, r, n_cores
+    )
 
 
 @njit(
     types.complex128(
-        types.complex128, types.float64, types.float64[:, :], types.float64,
-        types.float64[:, :], types.float64[:, :], types.float64[:, :],
-        types.ListType(types.complex128), types.complex128[:], types.int64[:],
-        types.complex128[:, :]))
-def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a):
+        types.complex128,
+        types.float64,
+        types.float64[:, :],
+        types.float64,
+        types.float64[:, :],
+        types.float64[:, :],
+        types.float64[:, :],
+        types.ListType(types.complex128),
+        types.complex128[:],
+        types.int64[:],
+        types.complex128[:, :],
+    )
+)
+def log_characteristic_function(
+    u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a
+):
     n = 2
     iu = 1j * u
 
@@ -367,13 +425,14 @@ def log_characteristic_function(u, t, v, beta, q, m, r, rot_locs, cached_u, cach
     g = exp_tz[-n:, :n]
     f = exp_tz[-n:, -n:]
 
-    rot = count_rotations(u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant)
+    rot = count_rotations(
+        u, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant
+    )
     log_det_f = cmath.log(np.linalg.det(f)) + 2j * cmath.pi * rot
 
     a[:, :] = np.linalg.solve(f, g)
-    c = (
-        -iu * t * beta * np.sum(r * q)
-        - (beta / 2) * (np.trace(m) * t + log_det_f)
+    c = -iu * t * beta * np.sum(r * q) - (beta / 2) * (
+        np.trace(m) * t + log_det_f
     )
     return np.sum(a * v) + c
 
@@ -384,9 +443,22 @@ def _reduced_formula(k, t, v, beta, q, m, r):
     a = np.zeros((2, 2), dtype=np.complex128)
 
     def integrand(u):
-        psi = log_characteristic_function(u - 0.5j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
-        integrand = cmath.exp(psi + (0.5 - 1j * u) * k).real / (u ** 2 + 0.25)
+        psi = log_characteristic_function(
+            u - 0.5j,
+            t,
+            v,
+            beta,
+            q,
+            m,
+            r,
+            rot_locs,
+            cached_u,
+            cached_quadrant,
+            a,
+        )
+        integrand = cmath.exp(psi + (0.5 - 1j * u) * k).real / (u**2 + 0.25)
         return integrand
+
     return 1 - quad(integrand, 0, np.inf)[0] / np.pi
 
 
@@ -394,12 +466,17 @@ def _reduced_delta(k, t, v, beta, q, m, r):
     rot_locs = typed.List(lsttype=types.ListType(types.complex128))
     cached_u, cached_quadrant = np.array([-1j]), np.array([0])
     a = np.zeros((2, 2), dtype=np.complex128)
-    psi_dem = log_characteristic_function(-1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
+    psi_dem = log_characteristic_function(
+        -1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a
+    )
 
     def integrand(u):
-        psi = log_characteristic_function(u - 1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
+        psi = log_characteristic_function(
+            u - 1j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a
+        )
         integrand = (cmath.exp(-1j * u * k + psi - psi_dem) / (1j * u)).real
         return integrand
+
     return 0.5 + quad(integrand, 0, np.inf)[0] / np.pi
 
 
@@ -411,11 +488,27 @@ def _reduced_vega(k, t, v, beta, q, m, r):
     vega = np.zeros((n, n))
     for i in range(n):
         for j in range(n):
+
             def integrand(u):
-                psi = log_characteristic_function(u - 0.5j, t, v, beta, q, m, r, rot_locs, cached_u, cached_quadrant, a)
-                integrand = (a[i, j] * cmath.exp(psi + (0.5 - 1j * u) * k)).real / (u ** 2 + 0.25)
+                psi = log_characteristic_function(
+                    u - 0.5j,
+                    t,
+                    v,
+                    beta,
+                    q,
+                    m,
+                    r,
+                    rot_locs,
+                    cached_u,
+                    cached_quadrant,
+                    a,
+                )
+                integrand = (
+                    a[i, j] * cmath.exp(psi + (0.5 - 1j * u) * k)
+                ).real / (u**2 + 0.25)
                 return integrand
-            vega[i, j] = - quad(integrand, 0, np.inf)[0] / np.pi
+
+            vega[i, j] = -quad(integrand, 0, np.inf)[0] / np.pi
     return vega
 
 
@@ -424,18 +517,31 @@ def _reduced_calib_xsect(cs, ks, ts, ws, v, beta, q, m, r, n_cores):
 
     def loss(params):
         v, beta, q, m, r = unpack_params(params, n)
-        print(f'v = {v}')
-        print(f'beta = {beta}')
-        print(f'q = {q}')
-        print(f'm = {m}')
-        print(f'r = {r}')
+        print(f"v = {v}")
+        print(f"beta = {beta}")
+        print(f"q = {q}")
+        print(f"m = {m}")
+        print(f"r = {r}")
         print()
         if n_cores is None:
-            cs_wishart = np.array([_reduced_formula(k, t, v, beta, q, m, r)
-                                   for k, t in zip(ks, ts)])
+            cs_wishart = np.array(
+                [
+                    _reduced_formula(k, t, v, beta, q, m, r)
+                    for k, t in zip(ks, ts)
+                ]
+            )
         else:
             with ProcessPoolExecutor(max_workers=n_cores) as executor:
-                cs_wishart = np.array(list(executor.map(_reduced_formula, ks, ts, *map(repeat, (v, beta, q, m, r)))))
+                cs_wishart = np.array(
+                    list(
+                        executor.map(
+                            _reduced_formula,
+                            ks,
+                            ts,
+                            *map(repeat, (v, beta, q, m, r)),
+                        )
+                    )
+                )
         return ws * (cs_wishart - cs)
 
     params, ier = leastsq(loss, pack_params(v, beta, q, m, r, n))
@@ -451,13 +557,26 @@ def _reduced_calib_vol(cs, ks, ts, ws, params, beta, q, m, r, n_cores):
 
     def loss(params):
         v = unpack_vol(params, n)
-        print(f'v = {v}')
+        print(f"v = {v}")
         if n_cores is None:
-            cs_wishart = np.array([_reduced_formula(k, t, v, beta, q, m, r)
-                                   for k, t in zip(ks, ts)])
+            cs_wishart = np.array(
+                [
+                    _reduced_formula(k, t, v, beta, q, m, r)
+                    for k, t in zip(ks, ts)
+                ]
+            )
         else:
             with ProcessPoolExecutor(max_workers=n_cores) as executor:
-                cs_wishart = np.array(list(executor.map(_reduced_formula, ks, ts, *map(repeat, (v, beta, q, m, r)))))
+                cs_wishart = np.array(
+                    list(
+                        executor.map(
+                            _reduced_formula,
+                            ks,
+                            ts,
+                            *map(repeat, (v, beta, q, m, r)),
+                        )
+                    )
+                )
         return ws * (cs_wishart - cs)
 
     params, ier = leastsq(loss, pack_vol(params, n))
