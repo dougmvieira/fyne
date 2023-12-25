@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="http://dougmvieira.github.io/fyne/guide/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>User guide - fyne</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "User guide";
+        var mkdocs_page_input_path = "guide.md";
+        var mkdocs_page_url = "/fyne/guide/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> fyne
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">User guide</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#models">Models</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pricing">Pricing</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example">Example</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#greeks">Greeks</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#calibration">Calibration</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/">Index</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/blackscholes/">Black-Scholes model</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/heston/">Heston model</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/wishart/">Wishart model</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">fyne</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">User guide</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="user-guide">User guide</h1>
+<h2 id="models">Models</h2>
+<p>The models that are currently implemented in <code>fyne</code> are the Black-Scholes,
+Heston and Wishart models. In order to make notation clear, especially with the
+naming of the parameters, we state below the discounted underlying price
+dynamics of the models under the risk-neutral measure.</p>
+<ul>
+<li>Black-Scholes</li>
+</ul>
+<p>\[
+dS_t = \sigma S_t dW_t
+\]</p>
+<ul>
+<li>Heston</li>
+</ul>
+<div class="arithmatex">
+<div class="MathJax_Preview">\begin{aligned}
+dS_t      &amp; = \sqrt{V_t} S_t dW_t \\
+dV_t      &amp; = \kappa(\theta - V_t)dt + \nu \sqrt{V_t}dZ_t \\
+d[W, Z]_t &amp; = \rho dt
+\end{aligned}</div>
+<script type="math/tex; mode=display">\begin{aligned}
+dS_t      & = \sqrt{V_t} S_t dW_t \\
+dV_t      & = \kappa(\theta - V_t)dt + \nu \sqrt{V_t}dZ_t \\
+d[W, Z]_t & = \rho dt
+\end{aligned}</script>
+</div>
+<ul>
+<li>Wishart</li>
+</ul>
+<div class="arithmatex">
+<div class="MathJax_Preview">\begin{aligned}
+dS_t      &amp; = S_t \mathrm{Tr} \left( \sqrt{V_t} \left(
+                  dW_t R + dZ_t \sqrt{I - RR^T} \right) \right) \\
+dV_t      &amp; = \left(\beta QQ^T + M V_t + V_t M^T \right) dt
+            + \sqrt{V_t} dW_t Q + Q^T dW_t^T \sqrt{V_t} \\
+d[W, Z]_t &amp; = 0
+\end{aligned}</div>
+<script type="math/tex; mode=display">\begin{aligned}
+dS_t      & = S_t \mathrm{Tr} \left( \sqrt{V_t} \left(
+                  dW_t R + dZ_t \sqrt{I - RR^T} \right) \right) \\
+dV_t      & = \left(\beta QQ^T + M V_t + V_t M^T \right) dt
+            + \sqrt{V_t} dW_t Q + Q^T dW_t^T \sqrt{V_t} \\
+d[W, Z]_t & = 0
+\end{aligned}</script>
+</div>
+<h2 id="pricing">Pricing</h2>
+<p>Each model has its own pricing formula. The available pricing functions
+are:</p>
+<ul>
+<li><code>fyne.blackscholes.formula</code></li>
+<li><code>fyne.heston.formula</code></li>
+</ul>
+<p>These functions return the price of the option in monetary units. If
+implied volatility is needed, it can be evaluated with
+<code>fyne.blackscholes.implied_vol</code>{.interpreted-text role="func"}.</p>
+<h3 id="example">Example</h3>
+<p>In this example, we compute the implied volatility smile according to
+the Heston model.</p>
+<pre><code class="language-python">import numpy as np
+import pandas as pd
+import plotly.express as px
+
+from fyne import blackscholes, heston
+
+underlying_price = 100.0
+vol = 0.0457
+params = (5.07, 0.0457, 0.48, -0.767)
+strikes, expiries = np.broadcast_arrays(
+    np.linspace(80.0, 120.0, 40)[:, None],
+    [0.1, 0.3, 1.0],
+)
+
+option_prices = heston.formula(
+    underlying_price, strikes, expiries, vol, *params
+)
+implied_vols = blackscholes.implied_vol(
+    underlying_price, strikes, expiries, option_prices
+)
+
+data = pd.DataFrame(
+    {
+        &quot;expirie&quot;: expiries.ravel(),
+        &quot;strike&quot;: strikes.ravel(),
+        &quot;implied_vol&quot;: implied_vols.ravel(),
+    }
+)
+fig = px.line(
+    data,
+    x=&quot;strike&quot;,
+    y=&quot;implied_vol&quot;,
+    color=&quot;expirie&quot;,
+    title=&quot;Heston volatility smile&quot;,
+    markers=True,
+)
+
+fig.write_html(
+    &quot;docs/heston_smile.html&quot;,
+    full_html=False,
+    include_plotlyjs=&quot;cdn&quot;,
+)
+</code></pre>
+<div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>                <div id="8313ef44-16e1-440e-b45c-257ba8f03d65" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("8313ef44-16e1-440e-b45c-257ba8f03d65")) {                    Plotly.newPlot(                        "8313ef44-16e1-440e-b45c-257ba8f03d65",                        [{"hovertemplate":"expiries=0.1\u003cbr\u003estrikes=%{x}\u003cbr\u003eimplied_vols=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"0.1","line":{"color":"#636efa","dash":"solid"},"marker":{"symbol":"circle"},"mode":"markers+lines","name":"0.1","orientation":"v","showlegend":true,"x":[80.0,81.02564102564102,82.05128205128204,83.07692307692308,84.1025641025641,85.12820512820512,86.15384615384616,87.17948717948718,88.2051282051282,89.23076923076923,90.25641025641025,91.28205128205128,92.3076923076923,93.33333333333333,94.35897435897436,95.38461538461539,96.41025641025641,97.43589743589743,98.46153846153845,99.48717948717949,100.51282051282051,101.53846153846153,102.56410256410257,103.58974358974359,104.61538461538461,105.64102564102564,106.66666666666666,107.6923076923077,108.71794871794872,109.74358974358974,110.76923076923077,111.7948717948718,112.82051282051282,113.84615384615384,114.87179487179486,115.8974358974359,116.92307692307692,117.94871794871794,118.97435897435898,120.0],"xaxis":"x","y":[0.2790752161790672,0.27573185863561844,0.2723768556409474,0.2690072373840524,0.26562170543733915,0.26221829061641627,0.2587956984990216,0.25535249711675406,0.25188631425652086,0.2483961963056626,0.2448803025695524,0.24133702326448742,0.2377647814859705,0.23416216001049792,0.2305278664536619,0.22686086047372142,0.22316045590312988,0.21942647127963957,0.2156594342077649,0.21186086468553375,0.20803359061440727,0.204182268297397,0.2003139786019842,0.1964388678998573,0.19257098531517716,0.1887290423060454,0.1849369792684026,0.18122424667430148,0.17762415565157394,0.17417419656352956,0.17091039746809777,0.1678671179665443,0.16506985951379874,0.16253881823659147,0.16027660553362616,0.15828566440850084,0.15655706603677336,0.15506908983634268,0.1538449820103453,null],"yaxis":"y","type":"scatter"},{"hovertemplate":"expiries=0.3\u003cbr\u003estrikes=%{x}\u003cbr\u003eimplied_vols=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"0.3","line":{"color":"#EF553B","dash":"solid"},"marker":{"symbol":"circle"},"mode":"markers+lines","name":"0.3","orientation":"v","showlegend":true,"x":[80.0,81.02564102564102,82.05128205128204,83.07692307692308,84.1025641025641,85.12820512820512,86.15384615384616,87.17948717948718,88.2051282051282,89.23076923076923,90.25641025641025,91.28205128205128,92.3076923076923,93.33333333333333,94.35897435897436,95.38461538461539,96.41025641025641,97.43589743589743,98.46153846153845,99.48717948717949,100.51282051282051,101.53846153846153,102.56410256410257,103.58974358974359,104.61538461538461,105.64102564102564,106.66666666666666,107.6923076923077,108.71794871794872,109.74358974358974,110.76923076923077,111.7948717948718,112.82051282051282,113.84615384615384,114.87179487179486,115.8974358974359,116.92307692307692,117.94871794871794,118.97435897435898,120.0],"xaxis":"x","y":[0.2615275462577199,0.2587190800472038,0.25591020069348375,0.2531003537247431,0.2502890492107742,0.24747575344672773,0.24466011868785506,0.24184185685243417,0.23902044528086638,0.23619592991088761,0.23336813508220317,0.23053707491504907,0.22770289533134108,0.22486589333940812,0.22202654047630338,0.21918550908533593,0.21634370113407836,0.21350228001438482,0.21066270540274754,0.20782677017357795,0.20499664068192996,0.20217489493616,0.19936456235295522,0.19656916253495402,0.1937927369958887,0.19103987476575007,0.18831572683708625,0.18562600600074078,0.18297696640168992,0.18037535897631557,0.1778283564705533,0.17534345327101045,0.17292837199263356,0.17059063458586193,0.16833789344411695,0.16617719632040273,0.1641149439388359,0.16215680056568618,0.16030732982082133,0.15857007888809635],"yaxis":"y","type":"scatter"},{"hovertemplate":"expiries=1.0\u003cbr\u003estrikes=%{x}\u003cbr\u003eimplied_vols=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"1.0","line":{"color":"#00cc96","dash":"solid"},"marker":{"symbol":"circle"},"mode":"markers+lines","name":"1.0","orientation":"v","showlegend":true,"x":[80.0,81.02564102564102,82.05128205128204,83.07692307692308,84.1025641025641,85.12820512820512,86.15384615384616,87.17948717948718,88.2051282051282,89.23076923076923,90.25641025641025,91.28205128205128,92.3076923076923,93.33333333333333,94.35897435897436,95.38461538461539,96.41025641025641,97.43589743589743,98.46153846153845,99.48717948717949,100.51282051282051,101.53846153846153,102.56410256410257,103.58974358974359,104.61538461538461,105.64102564102564,106.66666666666666,107.6923076923077,108.71794871794872,109.74358974358974,110.76923076923077,111.7948717948718,112.82051282051282,113.84615384615384,114.87179487179486,115.8974358974359,116.92307692307692,117.94871794871794,118.97435897435898,120.0],"xaxis":"x","y":[0.234365803492235,0.2327913734134055,0.23123011080460865,0.2296818339369776,0.22814637413112743,0.22662357537997105,0.22511329402501795,0.22361539849248685,0.2221297690638975,0.22065629764438144,0.2191948875112917,0.21774545305718931,0.21630791955683212,0.2148822229757745,0.21346830981260193,0.21206613695218424,0.2106756715139416,0.20929689069501123,0.20792977408868465,0.20657434092428625,0.20523057564351793,0.2038984946916552,0.2025781439637356,0.20126953711889803,0.19997272459804574,0.19868775863696483,0.19741470008079415,0.19615361817392246,0.19490459031935645,0.19366770179805018,0.19244304553625508,0.19123072173334005,0.1900308376836274,0.18884350740861827,0.18766885127268795,0.1865069955239509,0.1853580718161166,0.18422221674379122,0.18309957135585542,0.18199028077663437],"yaxis":"y","type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmapgl":[{"type":"heatmapgl","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"strikes"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"implied_vols"}},"legend":{"title":{"text":"expiries"},"tracegroupgap":0},"title":{"text":"Heston volatility smile"}},                        {"responsive": true}                    )                };                            </script>        </div>
+
+<h2 id="greeks">Greeks</h2>
+<p>Greeks are usually associated to the derivatives of the Black-Scholes
+formula. However, Greeks can be computed according to other models as
+well. The following are the available Greeks in <code>fyne</code>:</p>
+<ul>
+<li><code>fyne.blackscholes.delta</code></li>
+<li><code>fyne.blackscholes.vega</code></li>
+<li><code>fyne.heston.delta</code></li>
+<li><code>fyne.heston.vega</code></li>
+</ul>
+<h2 id="calibration">Calibration</h2>
+<p>In <code>fyne</code> we distinguish two types of calibration:</p>
+<ul>
+<li>Cross-sectional</li>
+<li>Calibration from options prices at a single point in time</li>
+<li>Panel</li>
+<li>Calibration from options prices at a multiple points in time</li>
+</ul>
+<p>Besides, calibration can recover the full parameter set and unobservable
+state variables or just the unobservable state variables.</p>
+<p>The available calibration functions are the following:</p>
+<ul>
+<li><code>fyne.heston.calibration_crosssectional</code></li>
+<li><code>fyne.heston.calibration_panel</code></li>
+<li><code>fyne.heston.calibration_vol</code></li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../reference/" class="btn btn-neutral float-right" title="Index">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../reference/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

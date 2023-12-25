@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>http://dougmvieira.github.io/fyne/</loc>
+         <lastmod>2023-12-25</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>http://dougmvieira.github.io/fyne/guide/</loc>
+         <lastmod>2023-12-25</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>http://dougmvieira.github.io/fyne/reference/</loc>
+         <lastmod>2023-12-25</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>http://dougmvieira.github.io/fyne/reference/blackscholes/</loc>
+         <lastmod>2023-12-25</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>http://dougmvieira.github.io/fyne/reference/heston/</loc>
+         <lastmod>2023-12-25</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>http://dougmvieira.github.io/fyne/reference/wishart/</loc>
+         <lastmod>2023-12-25</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+</urlset>
