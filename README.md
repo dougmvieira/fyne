@@ -16,4 +16,4 @@ pip install fyne
 
 ## Documentation
 
-https://fyne.readthedocs.io/
+https://dougmvieira.github.io/fyne/
