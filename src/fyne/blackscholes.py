@@ -120,6 +120,9 @@ def implied_vol(
     k = np.array(np.log(strike / underlying_price))
     c = np.array(call / underlying_price)
     k, expiry, c = np.broadcast_arrays(k, expiry, c)
+    is_otm = k > 0
+    k[is_otm] = -k[is_otm]
+    c[is_otm] = 1 + np.exp(k[is_otm]) * (c[is_otm] - 1)
     noarb_mask = ~np.any(
         common._check_arbitrage(underlying_price, call, strike), axis=0
     )
