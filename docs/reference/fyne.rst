@@ -1,5 +1,0 @@
-fyne
-====
-
-.. automodule:: fyne
-    :members:

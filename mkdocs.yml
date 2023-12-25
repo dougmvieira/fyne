@@ -1,0 +1,20 @@
+site_name: fyne
+site_url: http://dougmvieira.github.io/fyne
+nav:
+  - Home: index.md
+  - guide.md
+  - Reference:
+    - Index: reference/index.md
+    - reference/blackscholes.md
+    - reference/heston.md
+    - reference/wishart.md
+theme: readthedocs
+markdown_extensions:
+  - pymdownx.arithmatex
+  - pymdownx.snippets
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js
+plugins:
+  - search
+  - mkdocstrings

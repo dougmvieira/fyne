@@ -2,8 +2,9 @@
 
 Please see below the documentation for the implemented affine models.
 
-* :mod:`fyne.blackscholes`
-* :mod:`fyne.heston`
+- [fyne.blackscholes][]
+- [fyne.heston][]
+- [fyne.wishart][]
 
 """
 

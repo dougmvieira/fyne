@@ -1,0 +1,3 @@
+# Wishart model
+
+::: fyne.wishart

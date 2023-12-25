@@ -31,8 +31,8 @@ jobs:
         poetry install --with dev
     - name: Format with black and isort
       run: |
-        poetry run isort --check src tests
-        poetry run black --check src tests
+        poetry run isort --check .
+        poetry run black --check .
     - name: Lint with flake8
       run: |
         poetry run flake8
