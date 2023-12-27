@@ -121,19 +121,19 @@ def implied_vol(
     c = np.array(call / underlying_price)
     k, expiry, c = np.broadcast_arrays(k, expiry, c)
     is_otm = k > 0
-    k[is_otm] = -k[is_otm]
-    c[is_otm] = 1 + np.exp(k[is_otm]) * (c[is_otm] - 1)
+    k = np.where(is_otm, -k, k)
+    c = np.where(is_otm, 1 + np.exp(k) * (c - 1), c)
     noarb_mask = ~np.any(
         common._check_arbitrage(underlying_price, call, strike), axis=0
     )
     noarb_mask &= ~np.any(tuple(map(np.isnan, (k, expiry, c))), axis=0)
 
-    iv0 = np.maximum(norm.ppf(c[noarb_mask]), c[noarb_mask]) / np.sqrt(
-        expiry[noarb_mask]
-    )
+    iv0_atm = 2 * norm.ppf((c + 1) / 2)
+    iv0_asymp = norm.ppf(c)
+    iv0 = (iv0_atm * np.exp(k) + iv0_asymp * (1 - np.exp(k))) / np.sqrt(expiry)
     iv = np.full(c.shape, np.nan)
     iv[noarb_mask] = _reduced_implied_vol(
-        k[noarb_mask], expiry[noarb_mask], c[noarb_mask], iv0
+        k[noarb_mask], expiry[noarb_mask], c[noarb_mask], iv0[noarb_mask]
     )
     return iv
 
@@ -273,15 +273,15 @@ def _reduced_implied_vol(k, t, c, iv0):
     Used in `fyne.blackscholes.implied_vol`.
     """
 
-    converged = False
-    for _ in range(10):
-        f = _reduced_formula(k, t, iv0) - c
-        if abs(f) < 1e-8:
-            converged = True
+    for _ in range(20):
+        f_err = _reduced_formula(k, t, iv0) - c
+        if abs(f_err) < 1e-15:
             break
-        iv0 -= f / _reduced_vega(k, t, iv0)
+        iv0 -= f_err / _reduced_vega(k, t, iv0)
+    else:
+        iv0 = np.nan
 
-    return iv0 if converged else np.nan
+    return iv0
 
 
 @nb.vectorize([float64(float64, float64, float64)], nopython=True)
