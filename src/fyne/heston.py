@@ -2,7 +2,7 @@ import cmath
 from concurrent.futures import ProcessPoolExecutor
 from ctypes import c_void_p
 from itertools import repeat
-from math import pi
+from math import pi, sqrt
 
 import numpy as np
 from numba import carray, cfunc, njit
@@ -478,6 +478,124 @@ def calibration_vol(
     return vol
 
 
+def pdf(
+    x,
+    price,
+    time,
+    vol,
+    mu,
+    kappa,
+    theta,
+    nu,
+    rho,
+    is_log=False,
+):
+    r"""Heston probability density function
+
+    Compute the Heston probability density function of the price at a future
+    time conditional on instantaneous volatility.
+
+    Parameters
+    ----------
+    x : float
+        Level to evaluate the PDF. It can be log-price or price, depending on
+        the argument `log`.
+    price : float
+        Initial price.
+    time : float
+        Future time.
+    vol : float
+        Instantaneous volatility.
+    mu : float
+        Model parameter :math:`\mu`.
+    kappa : float
+        Model parameter :math:`\kappa`.
+    theta : float
+        Model parameter :math:`\theta`.
+    nu : float
+        Model parameter :math:`\nu`.
+    rho : float
+        Model parameter :math:`\rho`.
+    is_log : bool, optional
+        Whether the PDF is over prices of log-prices. Defaults to `False`.
+
+    Returns
+    -------
+    float
+        Probability density.
+
+    """
+    log_return = (x if is_log else np.log(x)) - np.log(price) - mu * time
+    if _reduced_tail_asymp(log_return, kappa, nu, rho) < 1e-10:
+        return 0
+    p = _reduced_pdf(log_return, time, vol, kappa, kappa * theta, nu, rho)
+    return p if is_log else p / x
+
+
+def simulate(
+    price,
+    vol,
+    mu,
+    kappa,
+    theta,
+    nu,
+    rho,
+    end_time,
+    time_step,
+    rng=np.random.default_rng(),
+):
+    r"""Heston simulation
+
+    Simulate asset price and volatility processes following the Heston price
+    dynamics.
+
+    Parameters
+    ----------
+    price : float
+        Initial price.
+    strike : float
+        Strike of the option.
+    expiry : float
+        Time remaining until the expiry of the option.
+    vol : float
+        Instantaneous volatility.
+    mu : float
+        Model parameter :math:`\mu`.
+    kappa : float
+        Model parameter :math:`\kappa`.
+    theta : float
+        Model parameter :math:`\theta`.
+    nu : float
+        Model parameter :math:`\nu`.
+    rho : float
+        Model parameter :math:`\rho`.
+    end_time : float
+        Time at which the simulation ends.
+    time_step: float
+        Time step to determine the granularity of the time grid.
+    rng: np.random.Generator
+        Numpy random number generator. Useful to set the seed.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray, np.ndarray]
+        Arrays for simulated prices and vols and the corresponding timestamps.
+    """
+
+    n = 1 + int(end_time / time_step)
+    z = rng.standard_normal((2, n - 1))
+    vol_sqs = _simulate_cir(vol, kappa, theta, nu, z[1, :], time_step)
+    vols = np.sqrt(vol_sqs)
+    z_corr = np.array([rho, np.sqrt(1 - rho**2)]) @ z
+    log_returns = np.full(n, np.log(price))
+    log_returns[1:] = (mu - 0.5 * vol_sqs[:-1]) * time_step + vols[
+        :-1
+    ] * z_corr * np.sqrt(time_step)
+    prices = np.exp(np.cumsum(log_returns))
+    timestamps = time_step * np.arange(n)
+    return prices, vols, timestamps
+
+
 @njit
 def _heston_psi(u, t, kappa, a, nu, rho):
     d = cmath.sqrt(
@@ -658,3 +776,45 @@ def _reduced_calib_vol(cs, ks, ts, ws, kappa, a, nu, rho, params, n_cores):
         raise ValueError("Heston calibration failed. ier = {}".format(ier))
 
     return params
+
+
+@njit
+def _simulate_cir(v0, kappa, theta, nu, z, dt):
+    n = len(z) + 1
+    v = np.full(n, v0)
+    for i in range(n - 1):
+        v[i + 1] = abs(
+            v[i]
+            + kappa * (theta - v[i]) * dt
+            + nu * sqrt(v[i]) * z[i] * sqrt(dt)
+        )
+    return v
+
+
+@cfunc("double(double, CPointer(double))")
+def _pdf_integrand(u, params):
+    x, t, v, kappa, a, nu, rho = carray(params, (7,))
+    psi_1, psi_2 = _heston_psi(u, t, kappa, a, nu, rho)
+    return cmath.exp(u * x * 1j + psi_1 + v * psi_2).real
+
+
+def _reduced_pdf(x, t, v, kappa, a, nu, rho):
+    params = np.array([x, t, v, kappa, a, nu, rho]).ctypes.data_as(c_void_p)
+    f = LowLevelCallable(
+        _pdf_integrand.ctypes, params, "double (double, void *)"
+    )
+    return quad(f, 0, np.inf)[0] / pi
+
+
+def _reduced_tail_asymp(x, kappa, nu, rho):
+    """
+    Heston tail density with asymptotic decay (t -> oo)
+
+    Source: Dragulescu, Yakovenko (2002). Probability distribution of returns
+    in the Heston model with stochastic volatility.
+    """
+    gamma, kappa = -kappa, nu
+    p0 = (kappa - 2 * rho * gamma) / (2 * kappa * (1 - rho**2))
+    omega0 = np.sqrt(gamma**2 + kappa**2 * (1 - rho**2) * p0**2)
+    q_asymp = omega0 / (kappa * np.sqrt(1 - rho**2)) + np.sign(x) * p0
+    return np.exp(-q_asymp * np.abs(x))

@@ -1,5 +1,6 @@
 import numpy as np
 from pytest import mark, raises
+from scipy.integrate import quad
 
 from fyne import blackscholes, heston, wishart
 
@@ -277,6 +278,28 @@ def test_heston_vega():
     )
 
     assert abs(vega_exact - vega_finite_diffs) < 1e-3
+
+
+def test_heston_pdf():
+    vol = 0.0457
+    mu = 0.1
+    params = 5.07, 0.0457, 0.48, -0.767
+    price = 100.0
+    time = 0.5
+
+    pdf_integral, _ = quad(
+        lambda x: heston.pdf(x, price, time, vol, mu, *params), 0, np.inf
+    )
+
+    assert abs(pdf_integral - 1) < 1e-6
+
+    log_pdf_integral, _ = quad(
+        lambda x: heston.pdf(x, price, time, vol, mu, *params, is_log=True),
+        -np.inf,
+        np.inf,
+    )
+
+    assert abs(log_pdf_integral - 1) < 1e-6
 
 
 def test_wishart_delta():
